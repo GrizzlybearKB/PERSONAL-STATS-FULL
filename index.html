@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name="theme-color" content="#0f172a"><link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Personal Stats v1.0</title>
+<title>Personal Stats v1.1.1</title>
 <style>
 :root {
   --bg:#0f172a; --panel:#172033; --panel2:#202b42; --text:#f8fafc; --muted:#94a3b8;
@@ -221,18 +221,40 @@ body.theme-light{--bg:#eef2f7;--panel:#ffffff;--panel2:#e8eef7;--text:#111827;--
 @keyframes slideLeft{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
 @keyframes blurIn{from{opacity:0;filter:blur(14px)}to{opacity:1;filter:blur(0)}}
 @media(max-width:760px){.wrapped-grid,.replay-board{grid-template-columns:1fr}.photo-library{grid-template-columns:repeat(2,1fr)}}
+
+.more-menu{position:fixed;inset:0;background:rgba(2,6,23,.72);display:none;align-items:flex-end;z-index:80}
+.more-menu.open{display:flex}.more-sheet{width:100%;max-height:82vh;overflow:auto;background:#111827;border-radius:22px 22px 0 0;border-top:1px solid var(--line);padding:18px 14px calc(20px + env(safe-area-inset-bottom))}
+.more-head{display:flex;align-items:center;justify-content:space-between}.more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.more-grid button{border:1px solid var(--line);border-radius:14px;background:#172033;color:var(--text);padding:16px 8px;display:grid;gap:7px;place-items:center;cursor:pointer}
+.more-grid button span{font-size:25px}.more-grid button small{font-size:11px;color:var(--muted)}
+.people-cards{display:none;gap:10px}.person-card{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:13px;border:1px solid var(--line);border-radius:15px;background:rgba(23,32,51,.96);cursor:pointer}
+.person-card img,.person-card-avatar{width:64px;height:64px;border-radius:14px;object-fit:cover;background:linear-gradient(135deg,#1d4ed8,#0f766e);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800}
+.person-card-name{font-size:17px;font-weight:800}.person-card-meta{font-size:12px;color:var(--muted);margin-top:4px}.person-card-total{text-align:right;font-size:20px;font-weight:900}
+.mobilebar button span{display:block;font-size:19px}.mobilebar button small{display:block;font-size:10px;margin-top:3px}
+.mobilebar .mobile-log span{width:42px;height:42px;margin:-22px auto 0;border-radius:50%;background:var(--accent);color:#07111f;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;border:4px solid #0b1120}
+@media(max-width:900px){.sidebar{display:none}.main{padding:14px 12px calc(92px + env(safe-area-inset-bottom))}.mobilebar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:rgba(11,17,32,.98);border-top:1px solid var(--line);z-index:70;padding:8px 4px calc(8px + env(safe-area-inset-bottom))}.mobilebar button{background:transparent;border:0;color:var(--muted);padding:6px 2px}.people-table-wrap{display:none}.people-cards{display:grid}.people-toolbar{display:grid;grid-template-columns:auto 1fr}.people-toolbar input{max-width:none!important}h1{font-size:28px;line-height:1.1;margin-bottom:15px}.card{border-radius:14px;padding:14px}}
+@media(max-width:520px){.main{padding-left:10px;padding-right:10px}.person-card{grid-template-columns:56px 1fr auto;padding:11px}.person-card img,.person-card-avatar{width:56px;height:56px}.person-card-total{font-size:18px}}
+
+.lock-icon{font-size:42px;text-align:center;margin-bottom:8px}
+.lock-card{text-align:center}
+.lock-card input{text-align:center;font-size:22px;letter-spacing:6px}
+.app-lock{backdrop-filter:blur(12px)}
+body.locked .app{filter:blur(14px);pointer-events:none;user-select:none}
 </style>
 
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand">Personal <span>Stats</span><div style="font-size:12px;color:var(--muted);margin-top:4px">v1.0 · Full Release</div></div>
+  <div class="brand">Personal <span>Stats</span><div style="font-size:12px;color:var(--muted);margin-top:4px">v1.1.1 · Privacy Lock</div></div>
   <div class="nav" id="desktopNav"></div>
 </aside>
 <main class="main">
 <section id="dashboard" class="page active"><h1>Dashboard</h1><div id="dashboardContent"></div></section>
-<section id="people" class="page"><h1>People</h1><div class="toolbar"><button class="btn" onclick="openAddPerson()">Add person</button><input id="peopleSearch" placeholder="Search…" oninput="renderPeople()" style="max-width:280px"></div><div class="card" style="overflow:auto"><table><thead><tr><th>Rank</th><th>Name</th><th>Total</th><th>Source</th><th>Gender</th><th>League</th><th>Last logged</th></tr></thead><tbody id="peopleTable"></tbody></table></div></section>
+<section id="people" class="page"><h1>People</h1>
+<div class="toolbar people-toolbar"><button class="btn" onclick="openAddPerson()">Add person</button><input id="peopleSearch" placeholder="Search people…" oninput="renderPeople()"></div>
+<div class="card people-table-wrap"><table><thead><tr><th>Rank</th><th>Name</th><th>Total</th><th>Source</th><th>Gender</th><th>League</th><th>Last logged</th></tr></thead><tbody id="peopleTable"></tbody></table></div>
+<div id="peopleCards" class="people-cards"></div></section>
 <section id="log" class="page"><h1>Log Entry</h1><div class="card"><div class="form-grid">
 <div><label>Date</label><input type="date" id="logDate"></div>
 <div><label>Name</label><select id="logPerson"></select></div>
@@ -404,26 +426,49 @@ body.theme-light{--bg:#eef2f7;--panel:#ffffff;--panel2:#e8eef7;--text:#111827;--
 </div>
 <div id="labContent" style="margin-top:14px"></div>
 </section>
-<section id="settings" class="page"><h1>Settings & Backup</h1><div class="install-note"><b>Important:</b> Never open <code>service-worker.js</code> directly. It is registered automatically by the app when hosted.<br><br><b>Phone use:</b> this app works best when opened from a normal web address, not directly from the Files app. A hosted/installable build is included in this version.</div><p class="small">Personal Stats v1.0 · Full Release</p><div class="two"><div class="card"><h2>Targets</h2><div class="form-grid"><div><label>Brenda target</label><input type="number" id="setBrenda"></div><div><label>Grand total target</label><input type="number" id="setGrand"></div><div><label>Attention after days</label><input type="number" id="setAttention"></div></div><button class="btn" style="margin-top:14px" onclick="saveSettings()">Save settings</button></div><div class="card"><h2>Data</h2><button class="btn secondary" onclick="exportData()">Export backup</button><input type="file" id="importFile" accept=".json" onchange="importData(event)" style="margin-top:12px"><button class="btn danger" style="margin-top:12px" onclick="resetData()">Reset app</button></div></div>
+<section id="settings" class="page"><h1>Settings & Backup</h1><div class="install-note"><b>Important:</b> Never open <code>service-worker.js</code> directly. It is registered automatically by the app when hosted.<br><br><b>Phone use:</b> this app works best when opened from a normal web address, not directly from the Files app. A hosted/installable build is included in this version.</div><p class="small">Personal Stats v1.1.1 · Privacy Lock</p><div class="two"><div class="card"><h2>Targets</h2><div class="form-grid"><div><label>Brenda target</label><input type="number" id="setBrenda"></div><div><label>Grand total target</label><input type="number" id="setGrand"></div><div><label>Attention after days</label><input type="number" id="setAttention"></div></div><button class="btn" style="margin-top:14px" onclick="saveSettings()">Save settings</button></div><div class="card"><h2>Data</h2><button class="btn secondary" onclick="exportData()">Export backup</button><input type="file" id="importFile" accept=".json" onchange="importData(event)" style="margin-top:12px"><button class="btn danger" style="margin-top:12px" onclick="resetData()">Reset app</button></div></div>
 <div class="card" style="margin-top:14px">
 <h2>Appearance & privacy</h2>
 <div class="form-grid">
 <div><label>Theme</label><select id="themeSelect" onchange="applyThemeFromSettings()"><option value="midnight">Midnight</option><option value="purple">Purple</option><option value="green">Green</option><option value="pink">Pink</option><option value="amber">Amber</option><option value="light">Light</option></select></div>
 <div><label>Accent colour</label><input id="accentPicker" type="color" value="#60a5fa" onchange="applyThemeFromSettings()"></div>
-<div><label>PIN lock</label><input id="pinInput" inputmode="numeric" maxlength="8" placeholder="Optional"></div>
+<div><label>New PIN</label><input id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="Leave blank to keep current PIN"></div>
+<div><label>Current PIN</label><input id="currentPinInput" type="password" inputmode="numeric" maxlength="8" placeholder="Required to change PIN"></div>
+<div><label>PIN hint</label><input id="pinHintInput" maxlength="60" placeholder="Optional hint"></div>
+<div><label>Auto-lock</label><select id="autoLockEnabled"><option value="true">On</option><option value="false">Off</option></select></div>
+<div><label>Lock after leaving app</label><select id="autoLockDelay">
+<option value="0">Immediately</option>
+<option value="30">After 30 seconds</option>
+<option value="60">After 1 minute</option>
+<option value="300">After 5 minutes</option>
+<option value="900">After 15 minutes</option>
+</select></div>
+<div><label>Lock on every launch</label><select id="lockOnLaunch"><option value="true">Yes</option><option value="false">No</option></select></div>
 </div>
 <div class="toolbar" style="margin-top:12px"><button class="btn" onclick="saveAppearanceSettings()">Save appearance</button><button class="btn secondary" onclick="lockApp()">Lock now</button></div>
 </div>
 </section>
 </main>
 </div>
-<div class="mobilebar" id="mobileNav"></div>
+<div class="mobilebar" id="mobileNav">
+<button onclick="navTo('dashboard')"><span>🏠</span><small>Home</small></button>
+<button onclick="navTo('people')"><span>👥</span><small>People</small></button>
+<button class="mobile-log" onclick="navTo('log')"><span>＋</span><small>Log</small></button>
+<button onclick="navTo('gallery')"><span>🖼️</span><small>Gallery</small></button>
+<button onclick="openMoreMenu()"><span>☰</span><small>More</small></button>
+</div>
+<div class="more-menu" id="moreMenu"><div class="more-sheet">
+<div class="more-head"><h2>More</h2><button class="iconbtn" onclick="closeMoreMenu()">×</button></div>
+<div id="moreMenuGrid" class="more-grid"></div>
+</div></div>
 <div class="app-lock" id="appLock">
   <div class="lock-card">
+    <div class="lock-icon">🔒</div>
     <h2>Personal Stats</h2>
-    <p class="small">Enter your PIN to unlock.</p>
-    <input id="unlockPin" inputmode="numeric" maxlength="8">
+    <p class="small" id="lockMessage">Enter your PIN to unlock.</p>
+    <input id="unlockPin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="PIN">
     <button class="btn" onclick="unlockApp()" style="margin-top:12px;width:100%">Unlock</button>
+    <button class="btn secondary" onclick="showPinHint()" style="margin-top:8px;width:100%">PIN hint</button>
   </div>
 </div>
 
@@ -551,6 +596,10 @@ function normaliseData(){
  if(!Array.isArray(data.unlockedAchievements)) data.unlockedAchievements=[];
  if(!Array.isArray(data.customAchievements)) data.customAchievements=[];
  if(!data.appearance) data.appearance={theme:"midnight",accent:"#60a5fa",pin:""};
+ if(data.appearance.autoLockEnabled==null) data.appearance.autoLockEnabled=true;
+ if(data.appearance.autoLockDelay==null) data.appearance.autoLockDelay=0;
+ if(data.appearance.lockOnLaunch==null) data.appearance.lockOnLaunch=true;
+ if(data.appearance.pinHint==null) data.appearance.pinHint="";
  if(!data.seasonNotes) data.seasonNotes={};
  if(!data.settings) data.settings={};
  if(data.settings.brendaTarget==null) data.settings.brendaTarget=300;
@@ -598,11 +647,15 @@ let spinning=false;
 const pages=[["dashboard","Home"],["people","People"],["log","Log"],["profile","Profile"],["challenges","Challenges"],["wheel","Wheel"],["stats","Stats"],["achievements","Achievements"],["seasons","Seasons"],["news","News"],["timeline","Timeline"],["gallery","Gallery"],["insights","Insights"],["calendar","Calendar"],["records","Records"],["replay","Replay"],["wrapped","Wrapped"],["lab","Stats Lab"],["settings","Settings"]];
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
 function navTo(id){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));renderAll();}
+const pageIcons={dashboard:"🏠",people:"👥",log:"＋",profile:"👤",challenges:"🎯",wheel:"🎡",stats:"📊",achievements:"🏆",seasons:"🏁",news:"📰",timeline:"🗓️",gallery:"🖼️",insights:"🧠",calendar:"📅",records:"📚",replay:"⏪",wrapped:"🎉",lab:"🧪",settings:"⚙️"};
 function buildNav(){
- const html=pages.map(([id,label])=>`<button data-page="${id}" onclick="navTo('${id}')">${label}</button>`).join("");
- document.getElementById("desktopNav").innerHTML=html;
- document.getElementById("mobileNav").innerHTML=pages.slice(0,5).map(([id,label])=>`<button onclick="navTo('${id}')">${label}</button>`).join("");
+ const desktop=pages.map(([id,label])=>`<button data-page="${id}" onclick="navTo('${id}')">${label}</button>`).join("");
+ document.getElementById("desktopNav").innerHTML=desktop;
+ const morePages=pages.filter(([id])=>!["dashboard","people","log","gallery"].includes(id));
+ document.getElementById("moreMenuGrid").innerHTML=morePages.map(([id,label])=>`<button onclick="navTo('${id}');closeMoreMenu()"><span>${pageIcons[id]||"•"}</span><small>${label}</small></button>`).join("");
 }
+function openMoreMenu(){document.getElementById("moreMenu").classList.add("open")}
+function closeMoreMenu(){document.getElementById("moreMenu").classList.remove("open")}
 function today(){return new Date().toISOString().slice(0,10)}
 function daysSince(s){if(!s)return null;return Math.floor((new Date(today())-new Date(s))/86400000)}
 function birthday30(p){if(!p.birthday)return null;const d=new Date(p.birthday+"T00:00:00");d.setFullYear(d.getFullYear()+30);return d.toISOString().slice(0,10)}
@@ -635,9 +688,12 @@ function renderDashboard(){
 }
 function renderPeople(){
  const q=(document.getElementById("peopleSearch")?.value||"").toLowerCase();
- document.getElementById("peopleTable").innerHTML=ranked().filter(p=>p.name.toLowerCase().includes(q)).map(p=>`<tr onclick="document.getElementById('profileSelect').value='${p.id}';navTo('profile')" style="cursor:pointer"><td>#${p.rank}</td><td>${esc(p.name)}</td><td>${p.total}</td><td>${esc(p.source)}</td><td>${esc(p.gender)}</td><td><span class="badge">${league(p.total)}</span></td><td>${p.lastLogged||"—"}</td></tr>`).join("");
-}
-function populateSelects(){
+ const people=ranked().filter(p=>p.name.toLowerCase().includes(q));
+ const table=document.getElementById("peopleTable");
+ if(table)table.innerHTML=people.map(p=>`<tr onclick="document.getElementById('profileSelect').value='${p.id}';navTo('profile')" style="cursor:pointer"><td>#${p.rank}</td><td>${esc(p.name)}</td><td>${p.total}</td><td>${esc(p.source)}</td><td>${esc(p.gender)}</td><td><span class="badge">${league(p.total)}</span></td><td>${p.lastLogged||"—"}</td></tr>`).join("");
+ const cards=document.getElementById("peopleCards");
+ if(cards)cards.innerHTML=people.map(p=>{const initials=p.name.split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();const visual=p.image?`<img src="${p.image}" alt="">`:`<div class="person-card-avatar">${initials}</div>`;const last=p.lastLogged?`${daysSince(p.lastLogged)} days ago`:"Never";return `<div class="person-card" onclick="document.getElementById('profileSelect').value='${p.id}';navTo('profile')">${visual}<div><div class="person-card-name">${esc(p.name)}</div><div class="person-card-meta">#${p.rank} · ${league(p.total)} · ${esc(p.source||"Unknown")}</div><div class="person-card-meta">Last activity: ${last}</div></div><div class="person-card-total">${p.total}</div></div>`;}).join("");
+}function populateSelects(){
  const alphabetical=[...data.people].sort(function(a,b){return a.name.localeCompare(b.name,undefined,{sensitivity:"base"});});
  const opts=alphabetical.map(function(p){return `<option value="${p.id}">${esc(p.name)}</option>`;}).join("");
  const lp=document.getElementById("logPerson");
@@ -1577,11 +1633,124 @@ function predictionRows(){
  data.people.forEach(p=>{const acts=personActivity(p.id).filter(a=>a.kind==="counted").sort((a,b)=>a.date.localeCompare(b.date));if(acts.length<2)return;const first=new Date(acts[0].date),days=Math.max(1,(todayDate-first)/86400000),rate=acts.reduce((s,a)=>s+a.points,0)/days,next=milestoneInfo(p.total).next,remain=next-p.total;if(rate>0)rows.push({name:p.name,next,days:Math.ceil(remain/rate)});});
  return rows.sort((a,b)=>a.days-b.days).slice(0,10);
 }
-function applyThemeFromSettings(){const theme=themeSelect.value||"midnight";document.body.className=[...document.body.classList].filter(x=>!x.startsWith("theme-")).join(" ");if(theme!=="midnight")document.body.classList.add("theme-"+theme);document.documentElement.style.setProperty("--accent",accentPicker.value);}
-function saveAppearanceSettings(){data.appearance={theme:themeSelect.value,accent:accentPicker.value,pin:pinInput.value};save();applyThemeFromSettings();alert("Appearance saved.");}
-function loadAppearanceSettings(){themeSelect.value=data.appearance?.theme||"midnight";accentPicker.value=data.appearance?.accent||"#60a5fa";pinInput.value=data.appearance?.pin||"";applyThemeFromSettings();}
-function lockApp(){if(!data.appearance?.pin)return alert("Set a PIN first.");appLock.classList.add("open");unlockPin.value="";}
-function unlockApp(){if(unlockPin.value===String(data.appearance?.pin||""))appLock.classList.remove("open");else alert("Incorrect PIN.");}
+
+let appUnlockedThisSession=false;
+let backgroundedAt=null;
+let privacyInitialised=false;
+
+function applyThemeFromSettings(){
+ const theme=themeSelect.value||data.appearance?.theme||"midnight";
+ document.body.className=[...document.body.classList].filter(x=>!x.startsWith("theme-")&&x!=="locked").join(" ");
+ if(theme!=="midnight")document.body.classList.add("theme-"+theme);
+ document.documentElement.style.setProperty("--accent",accentPicker.value||data.appearance?.accent||"#60a5fa");
+ if(document.getElementById("appLock")?.classList.contains("open"))document.body.classList.add("locked");
+}
+
+function saveAppearanceSettings(){
+ const oldPin=String(data.appearance?.pin||"");
+ const current=String(currentPinInput.value||"");
+ const requested=String(pinInput.value||"").trim();
+
+ if(requested){
+   if(!/^\d{4,8}$/.test(requested)){
+     alert("Choose a PIN containing 4 to 8 digits.");
+     return;
+   }
+   if(oldPin && current!==oldPin){
+     alert("The current PIN is incorrect.");
+     return;
+   }
+   data.appearance.pin=requested;
+ }
+ data.appearance.theme=themeSelect.value;
+ data.appearance.accent=accentPicker.value;
+ data.appearance.pinHint=pinHintInput.value.trim();
+ data.appearance.autoLockEnabled=autoLockEnabled.value==="true";
+ data.appearance.autoLockDelay=Number(autoLockDelay.value||0);
+ data.appearance.lockOnLaunch=lockOnLaunch.value==="true";
+
+ save();
+ pinInput.value="";
+ currentPinInput.value="";
+ applyThemeFromSettings();
+ alert("Privacy and appearance settings saved.");
+}
+
+function loadAppearanceSettings(){
+ themeSelect.value=data.appearance?.theme||"midnight";
+ accentPicker.value=data.appearance?.accent||"#60a5fa";
+ pinInput.value="";
+ currentPinInput.value="";
+ pinHintInput.value=data.appearance?.pinHint||"";
+ autoLockEnabled.value=String(data.appearance?.autoLockEnabled!==false);
+ autoLockDelay.value=String(data.appearance?.autoLockDelay??0);
+ lockOnLaunch.value=String(data.appearance?.lockOnLaunch!==false);
+ applyThemeFromSettings();
+
+ if(!privacyInitialised){
+   privacyInitialised=true;
+   if(data.appearance?.pin && data.appearance.lockOnLaunch!==false){
+     lockApp("App locked on launch.");
+   }
+ }
+}
+
+function lockApp(message="Enter your PIN to unlock."){
+ if(!data.appearance?.pin){
+   alert("Set and save a PIN first.");
+   return;
+ }
+ pauseSlideshow?.();
+ pauseReplay?.();
+ appUnlockedThisSession=false;
+ lockMessage.textContent=message;
+ unlockPin.value="";
+ appLock.classList.add("open");
+ document.body.classList.add("locked");
+ setTimeout(()=>unlockPin.focus(),100);
+}
+
+function unlockApp(){
+ const entered=String(unlockPin.value||"");
+ if(entered===String(data.appearance?.pin||"")){
+   appLock.classList.remove("open");
+   document.body.classList.remove("locked");
+   unlockPin.value="";
+   appUnlockedThisSession=true;
+   backgroundedAt=null;
+ }else{
+   lockMessage.textContent="Incorrect PIN. Try again.";
+   unlockPin.value="";
+   unlockPin.focus();
+ }
+}
+
+function showPinHint(){
+ const hint=data.appearance?.pinHint;
+ alert(hint ? "PIN hint: "+hint : "No PIN hint has been set.");
+}
+
+function shouldLockAfterBackground(){
+ if(!data.appearance?.pin||data.appearance.autoLockEnabled===false)return false;
+ const delay=Number(data.appearance.autoLockDelay||0)*1000;
+ if(backgroundedAt==null)return false;
+ return Date.now()-backgroundedAt>=delay;
+}
+
+function initialisePrivacyEvents(){
+ document.addEventListener("visibilitychange",function(){
+   if(document.visibilityState==="hidden"){
+     backgroundedAt=Date.now();
+   }else if(document.visibilityState==="visible"&&shouldLockAfterBackground()){
+     lockApp("App locked after being in the background.");
+   }
+ });
+ window.addEventListener("pagehide",function(){backgroundedAt=Date.now();});
+ window.addEventListener("focus",function(){
+   if(shouldLockAfterBackground())lockApp("App locked after being away.");
+ });
+ unlockPin.addEventListener("keydown",function(e){if(e.key==="Enter")unlockApp();});
+}
 function renderSettings(){document.getElementById("setBrenda").value=data.settings.brendaTarget;document.getElementById("setGrand").value=data.settings.grandTotalTarget;document.getElementById("setAttention").value=data.settings.attentionDays;}
 function saveSettings(){data.settings.brendaTarget=Number(document.getElementById("setBrenda").value);data.settings.grandTotalTarget=Number(document.getElementById("setGrand").value);data.settings.attentionDays=Number(document.getElementById("setAttention").value);save();renderAll();}
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="personal-stats-backup.json";a.click();}
@@ -1644,6 +1813,8 @@ function renderAll(){
 }
 document.addEventListener("keydown",e=>{if(!document.getElementById("slideshowFullscreen")?.classList.contains("open"))return;if(e.key==="ArrowRight")nextSlide();if(e.key==="ArrowLeft")previousSlide();if(e.key===" ")toggleSlideshowPlayback();if(e.key==="Escape")closeSlideshowFullscreen();});
 let touchStartX=0;document.addEventListener("touchstart",e=>{touchStartX=e.changedTouches[0].clientX},{passive:true});document.addEventListener("touchend",e=>{if(!document.getElementById("slideshowFullscreen")?.classList.contains("open"))return;const dx=e.changedTouches[0].clientX-touchStartX;if(Math.abs(dx)>50)(dx<0?nextSlide():previousSlide());},{passive:true});
+document.getElementById("moreMenu").addEventListener("click",e=>{if(e.target.id==="moreMenu")closeMoreMenu();});
+initialisePrivacyEvents();
 buildNav();renderAll();
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
  navigator.serviceWorker.register("service-worker.js").catch(()=>{});
