@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><meta name="theme-color" content="#0f172a"><link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Personal Stats v1.0</title>
+<style>
+:root {
+  --bg:#0f172a; --panel:#172033; --panel2:#202b42; --text:#f8fafc; --muted:#94a3b8;
+  --accent:#60a5fa; --green:#34d399; --gold:#fbbf24; --red:#fb7185; --line:#334155;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(135deg,#0b1020,#111b32);color:var(--text)}
+button,input,select,textarea{font:inherit}
+.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+.sidebar{background:rgba(11,17,32,.96);border-right:1px solid var(--line);padding:20px;position:sticky;top:0;height:100vh}
+.brand{font-size:24px;font-weight:800;margin-bottom:22px}
+.brand span{color:var(--accent)}
+.nav button{width:100%;text-align:left;background:transparent;border:0;color:var(--muted);padding:11px 12px;border-radius:10px;margin:2px 0;cursor:pointer}
+.nav button.active,.nav button:hover{background:var(--panel2);color:var(--text)}
+.main{padding:24px;min-width:0}
+.page{display:none} .page.active{display:block}
+h1{margin:0 0 18px} h2{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{background:rgba(23,32,51,.95);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.metric .label{color:var(--muted);font-size:13px} .metric .value{font-size:28px;font-weight:800;margin-top:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);position:sticky;top:0;background:var(--panel)}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#22304a;color:#cbd5e1;font-size:12px}
+.good{color:var(--green)} .warn{color:var(--gold)} .bad{color:var(--red)}
+.progress{height:10px;background:#111827;border-radius:999px;overflow:hidden}
+.progress>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--green))}
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:5px}
+input,select,textarea{width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background:#111827;color:var(--text)}
+.btn{background:var(--accent);color:#07111f;border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+.btn.secondary{background:#2b3852;color:var(--text)} .btn.danger{background:var(--red);color:#28050c}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.wheel-wrap{display:grid;grid-template-columns:1fr 340px;gap:18px}
+#wheelCanvas{width:100%;max-width:640px;aspect-ratio:1;border-radius:50%;background:#0b1220}
+.result{font-size:28px;font-weight:800;text-align:center;padding:16px}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{padding:7px 10px;border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--muted)}
+.chip.on{background:#1d4ed8;color:white;border-color:#3b82f6}
+.mobilebar{display:none}
+@media(max-width:900px){
+ .app{display:block} .sidebar{display:none} .main{padding:14px 12px 84px}
+ .grid{grid-template-columns:1fr 1fr} .two,.wheel-wrap{grid-template-columns:1fr}
+ .form-grid{grid-template-columns:1fr} .mobilebar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:#0b1120;border-top:1px solid var(--line);z-index:20}
+ .mobilebar button{background:transparent;border:0;color:var(--muted);padding:12px 4px;font-size:12px}
+}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+
+.modal{position:fixed;inset:0;background:rgba(2,6,23,.78);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+.modal.open{display:flex}.modal-card{width:min(760px,100%);max-height:90vh;overflow:auto;background:#172033;border:1px solid var(--line);border-radius:18px;padding:18px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.iconbtn{background:transparent;border:0;color:var(--muted);font-size:24px;cursor:pointer}
+.profile-hero{display:grid;grid-template-columns:110px 1fr;gap:16px;align-items:center}.avatar{width:110px;height:110px;border-radius:22px;background:linear-gradient(135deg,#1d4ed8,#0f766e);display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:800}
+.tagrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.milestone-list{display:grid;gap:10px}.milestone-row{display:grid;grid-template-columns:90px 1fr 54px;gap:10px;align-items:center}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.achievement{padding:12px;border:1px solid var(--line);border-radius:14px;background:#111827}.achievement.locked{opacity:.38;filter:grayscale(.8)}.small{font-size:12px;color:var(--muted)}
+@media(max-width:640px){.profile-hero{grid-template-columns:1fr;text-align:center}.avatar{margin:auto}.badge-grid{grid-template-columns:1fr 1fr}}
+
+.challenge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.challenge-card{background:rgba(23,32,51,.95);border:1px solid var(--line);border-radius:16px;padding:16px}
+.challenge-card.completed{border-color:#166534}.challenge-card.failed{border-color:#991b1b}
+.challenge-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.status-pill{padding:4px 9px;border-radius:999px;font-size:12px;font-weight:700;background:#25324b;color:#cbd5e1}
+.status-pill.completed{background:#14532d;color:#bbf7d0}.status-pill.failed{background:#7f1d1d;color:#fecaca}.status-pill.active{background:#1e3a8a;color:#bfdbfe}
+.challenge-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.challenge-meta div{background:#111827;border-radius:10px;padding:9px}
+.challenge-meta b{display:block;font-size:18px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{background:#243047;border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:999px;cursor:pointer}
+.tabs button.on{background:#1d4ed8;color:#fff}
+@media(max-width:760px){.challenge-grid{grid-template-columns:1fr}.challenge-meta{grid-template-columns:1fr 1fr}}
+
+
+.six-list{display:grid;gap:8px;margin-top:10px}
+.six-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#111827}
+.attempt-actions{display:flex;gap:6px;flex-wrap:wrap}
+.mini-btn{border:0;border-radius:8px;padding:6px 9px;cursor:pointer;background:#2b3852;color:var(--text)}
+.wheel-profile{display:grid;gap:9px;margin-top:14px}
+.wheel-profile-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.install-note{background:#0f2b46;border:1px solid #1d4ed8;border-radius:12px;padding:12px;margin-bottom:14px;color:#bfdbfe}
+@media(max-width:900px){
+ body{overflow-x:hidden}
+ .app{width:100%;max-width:100vw}
+ .main{width:100%;max-width:100vw;overflow-x:hidden}
+ .card{max-width:100%;overflow-wrap:anywhere}
+ table{min-width:680px}
+ .wheel-wrap{display:block}
+ #wheelCanvas{display:block;width:min(92vw,560px)!important;height:auto!important;margin:0 auto}
+ .mobilebar{grid-template-columns:repeat(5,minmax(0,1fr));padding-bottom:env(safe-area-inset-bottom)}
+ .mobilebar button{font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+}
+@media(max-width:520px){
+ h1{font-size:25px}
+ .main{padding:12px 10px 82px}
+ .grid,.two,.challenge-grid{grid-template-columns:1fr}
+ .toolbar{display:grid;grid-template-columns:1fr 1fr}
+ .toolbar .btn,.toolbar input,.toolbar select{width:100%}
+ .challenge-meta{grid-template-columns:1fr 1fr}
+ .modal{padding:8px}
+ .modal-card{padding:14px;border-radius:14px}
+ .form-grid{grid-template-columns:1fr}
+ .badge-grid{grid-template-columns:1fr}
+}
+
+
+.order-list{display:grid;gap:8px;margin-top:12px}
+.order-item{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:11px;background:#111827}
+.order-num{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#1d4ed8;font-weight:800}
+.chart-row{display:grid;grid-template-columns:150px 1fr 60px;gap:10px;align-items:center;margin:9px 0}
+.chartbar{height:12px;border-radius:999px;background:#111827;overflow:hidden}
+.chartbar span{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#34d399)}
+.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:700px){.stats-grid{grid-template-columns:1fr}.chart-row{grid-template-columns:100px 1fr 48px}}
+
+.achievement-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.achievement-card{padding:15px;border-radius:15px;border:1px solid var(--line);background:#111827}
+.achievement-card.unlocked{border-color:#166534;background:linear-gradient(135deg,#0d2b22,#14253d)}
+.achievement-icon{font-size:28px;margin-bottom:8px}
+.collection-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.collection-card{padding:14px;border:1px solid var(--line);border-radius:14px;background:#111827}
+.season-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.season-card{padding:16px;border:1px solid var(--line);border-radius:16px;background:#111827}
+.hof-row{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.medal{font-size:24px}
+@media(max-width:760px){.achievement-grid,.collection-grid,.season-grid{grid-template-columns:1fr}}
+
+
+.news-list{display:grid;gap:10px}
+.news-item{display:grid;grid-template-columns:48px 1fr;gap:12px;padding:13px;border:1px solid var(--line);border-radius:14px;background:#111827}
+.news-icon{font-size:25px;width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#1e293b}
+.timeline-list{position:relative;padding-left:22px}
+.timeline-list:before{content:"";position:absolute;left:7px;top:5px;bottom:5px;width:2px;background:var(--line)}
+.timeline-item{position:relative;padding:0 0 18px 14px}
+.timeline-item:before{content:"";position:absolute;left:-20px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid #0f172a}
+.timeline-date{font-size:12px;color:var(--muted)}
+.history-badge{display:inline-block;padding:3px 7px;border-radius:999px;background:#3f2d18;color:#fde68a;font-size:11px}
+.log-mode{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#111827}
+.error-card{border-color:#991b1b;background:#2a1117}
+
+.profile-image-wrap{width:110px;height:110px;border-radius:22px;overflow:hidden;background:linear-gradient(135deg,#1d4ed8,#0f766e);display:flex;align-items:center;justify-content:center}
+.profile-image-wrap img{width:100%;height:100%;object-fit:cover}
+.image-preview{width:120px;height:120px;border-radius:16px;object-fit:cover;background:#111827;border:1px solid var(--line)}
+.slideshow-stage{min-height:420px;border-radius:16px;background:#070b14;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.slideshow-stage img{width:100%;height:100%;max-height:620px;object-fit:contain}
+.slideshow-empty{color:var(--muted);text-align:center;padding:30px}
+.slideshow-caption{position:absolute;left:0;right:0;bottom:0;padding:18px;background:linear-gradient(transparent,rgba(0,0,0,.85));font-size:24px;font-weight:800;text-align:center}
+.slideshow-queue{display:grid;gap:8px;max-height:560px;overflow:auto}
+.slideshow-queue-item{display:grid;grid-template-columns:42px 54px 1fr auto;gap:9px;align-items:center;padding:9px;border:1px solid var(--line);border-radius:11px;background:#111827}
+.slideshow-thumb{width:54px;height:54px;border-radius:9px;object-fit:cover;background:#1e293b}
+.slideshow-queue-actions{display:flex;gap:5px}
+.slideshow-queue-actions button{border:0;border-radius:8px;padding:6px 8px;background:#2b3852;color:var(--text);cursor:pointer}
+.slideshow-fullscreen{position:fixed;inset:0;background:#000;z-index:100;display:none;align-items:center;justify-content:center}
+.slideshow-fullscreen.open{display:flex}
+.slideshow-fullscreen-stage{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;position:relative}
+.slideshow-fullscreen-stage img{width:100%;height:100%;object-fit:contain}
+.slideshow-fullscreen-stage .slideshow-caption{font-size:34px;padding:28px}
+.slideshow-close{position:absolute;right:18px;top:14px;z-index:102;border:0;background:rgba(0,0,0,.5);color:white;width:48px;height:48px;border-radius:50%;font-size:30px;cursor:pointer}
+.slideshow-full-controls{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:102}
+.slideshow-full-controls button{border:0;border-radius:999px;width:50px;height:50px;background:rgba(20,30,50,.8);color:white;font-size:20px;cursor:pointer}
+.past-activity-list{display:grid;gap:8px;max-height:330px;overflow:auto}
+.past-activity-item{display:grid;grid-template-columns:105px 1fr auto;gap:10px;padding:9px;border-bottom:1px solid var(--line)}
+@media(max-width:700px){
+ .slideshow-stage{min-height:300px}
+ .slideshow-queue-item{grid-template-columns:34px 46px 1fr}
+ .slideshow-queue-actions{grid-column:2/5}
+ .slideshow-fullscreen-stage .slideshow-caption{font-size:23px}
+}
+
+
+.insight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.insight-card{padding:15px;border:1px solid var(--line);border-radius:15px;background:#111827}
+.insight-icon{font-size:26px;margin-bottom:8px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.calendar-head{text-align:center;color:var(--muted);font-size:12px;padding:6px}
+.calendar-day{aspect-ratio:1;border:1px solid var(--line);border-radius:10px;padding:7px;cursor:pointer;background:#101827;position:relative}
+.calendar-day.empty{opacity:.25;cursor:default}.calendar-day:hover{border-color:var(--accent)}
+.calendar-day .num{font-weight:700}.calendar-day .count{position:absolute;right:6px;bottom:5px;font-size:11px;color:var(--muted)}
+.heat-0{background:#101827}.heat-1{background:#123047}.heat-2{background:#174d5f}.heat-3{background:#176b68}.heat-4{background:#15806f}
+.record-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.record-card{padding:15px;border:1px solid var(--line);border-radius:15px;background:#111827}
+.category-explorer{display:grid;grid-template-columns:260px 1fr;gap:14px}
+.category-list{display:grid;gap:8px}
+.category-btn{width:100%;text-align:left;padding:10px;border:1px solid var(--line);border-radius:10px;background:#111827;color:var(--text);cursor:pointer}
+.category-btn.on{border-color:var(--accent);background:#172a46}
+.category-people{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.category-person{padding:12px;border:1px solid var(--line);border-radius:12px;background:#111827;cursor:pointer}
+.slideshow-stage.crossfade img,.slideshow-fullscreen-stage.crossfade img{animation:fadeIn .75s ease}
+.slideshow-stage.zoom img,.slideshow-fullscreen-stage.zoom img{animation:kenburns 7s ease-in-out both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.08)}}
+@media(max-width:760px){.insight-grid,.record-grid{grid-template-columns:1fr}.category-explorer{grid-template-columns:1fr}.category-people{grid-template-columns:1fr}.calendar-day{min-height:62px;aspect-ratio:auto}}
+
+:root{--accent-rgb:96,165,250}
+body.theme-purple{--accent:#a78bfa;--accent-rgb:167,139,250}
+body.theme-green{--accent:#34d399;--accent-rgb:52,211,153}
+body.theme-pink{--accent:#f472b6;--accent-rgb:244,114,182}
+body.theme-amber{--accent:#fbbf24;--accent-rgb:251,191,36}
+body.theme-light{--bg:#eef2f7;--panel:#ffffff;--panel2:#e8eef7;--text:#111827;--muted:#64748b;--line:#cbd5e1;background:#eef2f7}
+.replay-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.replay-list{display:grid;gap:8px}
+.replay-row{display:grid;grid-template-columns:44px 1fr 70px;gap:10px;align-items:center;padding:9px;border:1px solid var(--line);border-radius:10px;background:#111827}
+.line-chart{width:100%;height:300px;background:#0b1220;border:1px solid var(--line);border-radius:14px}
+.wrapped-hero{padding:28px;border-radius:20px;background:linear-gradient(135deg,rgba(var(--accent-rgb),.28),#111827);border:1px solid var(--line)}
+.wrapped-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+.wrapped-card{padding:18px;border-radius:16px;background:#111827;border:1px solid var(--line)}
+.wrapped-big{font-size:34px;font-weight:900;margin-top:7px}
+.photo-library{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.photo-tile{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#111827}
+.photo-tile img{width:100%;height:90px;object-fit:cover;display:block}
+.photo-tile button{position:absolute;right:5px;top:5px;border:0;border-radius:50%;background:rgba(0,0,0,.65);color:white;width:26px;height:26px;cursor:pointer}
+.photo-tile .fav{left:5px;right:auto}
+.prediction-card{padding:14px;border:1px solid var(--line);border-radius:14px;background:#111827}
+.app-lock{position:fixed;inset:0;background:rgba(2,6,23,.97);display:none;align-items:center;justify-content:center;z-index:200}
+.app-lock.open{display:flex}.lock-card{width:min(360px,90vw);padding:22px;border:1px solid var(--line);border-radius:18px;background:#172033}
+.slideshow-stage.slide-left img,.slideshow-fullscreen-stage.slide-left img{animation:slideLeft .55s ease}
+.slideshow-stage.blur-in img,.slideshow-fullscreen-stage.blur-in img{animation:blurIn .75s ease}
+@keyframes slideLeft{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes blurIn{from{opacity:0;filter:blur(14px)}to{opacity:1;filter:blur(0)}}
+@media(max-width:760px){.wrapped-grid,.replay-board{grid-template-columns:1fr}.photo-library{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand">Personal <span>Stats</span><div style="font-size:12px;color:var(--muted);margin-top:4px">v1.0 · Full Release</div></div>
+  <div class="nav" id="desktopNav"></div>
+</aside>
+<main class="main">
+<section id="dashboard" class="page active"><h1>Dashboard</h1><div id="dashboardContent"></div></section>
+<section id="people" class="page"><h1>People</h1><div class="toolbar"><button class="btn" onclick="openAddPerson()">Add person</button><input id="peopleSearch" placeholder="Search…" oninput="renderPeople()" style="max-width:280px"></div><div class="card" style="overflow:auto"><table><thead><tr><th>Rank</th><th>Name</th><th>Total</th><th>Source</th><th>Gender</th><th>League</th><th>Last logged</th></tr></thead><tbody id="peopleTable"></tbody></table></div></section>
+<section id="log" class="page"><h1>Log Entry</h1><div class="card"><div class="form-grid">
+<div><label>Date</label><input type="date" id="logDate"></div>
+<div><label>Name</label><select id="logPerson"></select></div>
+<div id="amountWrap"><label>Amount</label><input type="number" min="1" value="1" id="logAmount"></div>
+</div>
+<div class="log-mode"><label style="margin:0"><input type="checkbox" id="historyOnly" style="width:auto" onchange="toggleHistoryOnly()"> Historical date only — do not increase total</label></div>
+<div style="margin-top:12px"><label>Note</label><input id="logNote" placeholder="Optional"></div>
+<button class="btn" style="margin-top:14px" onclick="addLog()">Save entry</button></div><div class="card" style="margin-top:14px;overflow:auto"><h2>Recent logs</h2><table><thead><tr><th>Date</th><th>Name</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead><tbody id="recentLogs"></tbody></table></div></section>
+<section id="profile" class="page"><h1>Profile</h1><div class="toolbar"><select id="profileSelect" onchange="renderProfile()"></select></div><div id="profileContent"></div></section>
+<section id="challenges" class="page"><h1>Challenges</h1>
+<div class="toolbar"><button class="btn" onclick="openChallengeModal()">Add challenge</button><button class="btn secondary" onclick="openAttemptModal()">Record attempt</button></div>
+<div class="tabs" id="challengeTabs"><button class="on" data-tab="all" onclick="setChallengeTab('all',this)">All</button><button data-tab="active" onclick="setChallengeTab('active',this)">Active</button><button data-tab="completed" onclick="setChallengeTab('completed',this)">Completed</button><button data-tab="failed" onclick="setChallengeTab('failed',this)">Failed</button><button data-tab="history" onclick="setChallengeTab('history',this)">History</button></div>
+<div id="challengeContent"></div></section>
+<section id="wheel" class="page"><h1>Wheel & Random Order</h1>
+<div class="toolbar">
+<button class="btn" onclick="setWheelMode('spin')">Spin one</button>
+<button class="btn secondary" onclick="setWheelMode('order')">Random order</button>
+</div>
+<div id="spinMode"><div class="wheel-wrap"><div class="card"><canvas id="wheelCanvas" width="700" height="700"></canvas><div class="result" id="wheelResult">Ready</div><div class="wheel-profile" id="wheelProfile"></div><button class="btn" onclick="spinWheel()" style="width:100%">Spin</button></div><div class="card"><h2>Filters</h2><label>Source</label><div class="chips" id="sourceChips"></div><label style="margin-top:14px">Gender</label><div class="chips" id="genderChips"></div><label style="margin-top:14px">Content type</label><div class="chips" id="typeChips"></div><div style="margin-top:14px"><label><input type="checkbox" id="wheelActive" checked style="width:auto"> Active only</label></div><button class="btn secondary" onclick="clearWheelFilters()">Clear filters</button></div></div></div>
+<div id="orderMode" style="display:none">
+<div class="two">
+<div class="card">
+<h2>Random Order Settings</h2>
+<label>How many names?</label><input id="orderCount" type="number" min="1" value="10">
+<div style="margin-top:12px"><label><input type="checkbox" id="orderNoRepeats" checked style="width:auto"> No repeats</label></div>
+<div class="toolbar" style="margin-top:14px">
+<button class="btn" onclick="generateRandomOrder()">Generate order</button>
+<button class="btn secondary" onclick="copyRandomOrder()">Copy list</button>
+<button class="btn secondary" onclick="clearRandomOrder()">Clear</button>
+</div>
+<p class="small">Uses the same filters as the wheel.</p>
+</div>
+<div class="card"><h2>Random Order</h2><div id="randomOrderList" class="order-list"><p class="small">Generate a list to begin.</p></div></div>
+</div>
+</div>
+</section>
+<section id="stats" class="page"><h1>Statistics</h1><div id="statsContent"></div></section>
+
+<section id="achievements" class="page"><h1>Achievements & Collections</h1><div class="toolbar"><button class="btn" onclick="openCustomAchievementModal()">Add custom achievement</button></div><div id="achievementsContent"></div></section>
+<section id="seasons" class="page"><h1>Seasons & Hall of Fame</h1><div id="seasonsContent"></div></section>
+
+<section id="news" class="page"><h1>News Feed</h1><div id="newsContent"></div></section>
+<section id="timeline" class="page"><h1>Timeline</h1>
+<div class="toolbar">
+<select id="timelinePerson" onchange="renderTimeline()"></select>
+<select id="timelineType" onchange="renderTimeline()">
+<option value="all">All activity</option>
+<option value="counted">Counted logs</option>
+<option value="history">Historical dates only</option>
+</select>
+</div>
+<div id="timelineContent"></div>
+</section>
+
+<section id="gallery" class="page">
+  <h1>Gallery & Slideshow</h1>
+  <div class="toolbar">
+    <button class="btn" onclick="buildSlideshowQueue()">Build from filters</button>
+    <button class="btn secondary" onclick="shuffleSlideshow()">Random order</button>
+    <button class="btn secondary" onclick="clearSlideshowQueue()">Clear order</button>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h2>Filters</h2>
+      <label>Source</label><div class="chips" id="gallerySourceChips"></div>
+      <label style="margin-top:14px">Gender</label><div class="chips" id="galleryGenderChips"></div>
+      <label style="margin-top:14px">Content type</label><div class="chips" id="galleryTypeChips"></div>
+      <div class="form-grid" style="margin-top:14px">
+        <div><label><input type="checkbox" id="galleryActiveOnly" checked style="width:auto"> Active only</label></div>
+        <div><label><input type="checkbox" id="galleryImagesOnly" checked style="width:auto"> Images only</label></div>
+        <div><label><input type="checkbox" id="galleryFavouriteOnly" style="width:auto"> Favourites only</label></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Playback</h2>
+      <div class="form-grid">
+        <div><label>Seconds per picture</label><input id="slideSeconds" type="number" min="0.5" step="0.5" value="5"></div>
+        <div><label>Loop</label><select id="slideLoop"><option value="true">Yes</option><option value="false">No</option></select></div>
+        <div><label>Show name</label><select id="slideShowName"><option value="true">Yes</option><option value="false">No</option></select></div>
+<div><label>Transition</label><select id="slideTransition"><option value="none">None</option><option value="crossfade">Crossfade</option><option value="zoom">Slow zoom</option><option value="slide-left">Slide</option><option value="blur-in">Blur</option><option value="random">Random each slide</option></select></div>
+<div><label>Music file</label><input id="slideMusicFile" type="file" accept="audio/*" onchange="loadSlideshowMusic(event)"></div><div><label>Random duration</label><select id="slideRandomTiming"><option value="false">Off</option><option value="true">On</option></select></div><div><label>Minimum seconds</label><input id="slideMinSeconds" type="number" min="0.5" step="0.5" value="3"></div><div><label>Maximum seconds</label><input id="slideMaxSeconds" type="number" min="0.5" step="0.5" value="8"></div>
+      </div>
+      <div class="toolbar" style="margin-top:14px">
+        <button class="btn" onclick="startSlideshow()">Start</button>
+        <button class="btn secondary" onclick="pauseSlideshow()">Pause</button>
+        <button class="btn secondary" onclick="previousSlide()">Previous</button>
+        <button class="btn secondary" onclick="nextSlide()">Next</button>
+        <button class="btn secondary" onclick="openSlideshowFullscreen()">Full screen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h2>Preview</h2>
+      <div id="slideshowPreview" class="slideshow-stage">
+        <div class="slideshow-empty">Build an order to begin.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Order</h2>
+      <p class="small">Use the arrow buttons to control the order manually.</p>
+      <div id="slideshowQueue" class="slideshow-queue"></div>
+    </div>
+  </div>
+</section>
+
+<div class="slideshow-fullscreen" id="slideshowFullscreen">
+  <button class="slideshow-close" onclick="closeSlideshowFullscreen()">×</button>
+  <div id="slideshowFullscreenStage" class="slideshow-fullscreen-stage"></div><audio id="slideshowAudio" loop></audio>
+  <div class="slideshow-full-controls">
+    <button onclick="previousSlide()">⏮</button>
+    <button onclick="toggleSlideshowPlayback()">⏯</button>
+    <button onclick="nextSlide()">⏭</button>
+    <button onclick="shuffleSlideshow()">🔀</button>
+  </div>
+</div>
+
+<section id="insights" class="page"><h1>Smart Insights</h1><div id="insightsContent"></div></section>
+
+<section id="calendar" class="page"><h1>Calendar & Heatmap</h1>
+<div class="toolbar">
+  <button class="btn secondary" onclick="changeCalendarMonth(-1)">Previous</button>
+  <div class="card" style="padding:10px 14px"><b id="calendarTitle"></b></div>
+  <button class="btn secondary" onclick="changeCalendarMonth(1)">Next</button>
+  <select id="calendarPerson" onchange="renderCalendar()"></select>
+</div>
+<div class="card"><div id="calendarGrid" class="calendar-grid"></div></div>
+<div id="calendarDayDetail" class="card" style="margin-top:14px"><p class="small">Choose a day to see activity.</p></div>
+</section>
+
+<section id="records" class="page"><h1>Records & Category Explorer</h1><div id="recordsContent"></div></section>
+
+<section id="replay" class="page"><h1>Timeline Replay</h1>
+<div class="card">
+  <div class="form-grid">
+    <div><label>Replay date</label><input id="replayDate" type="date" onchange="renderReplay()"></div>
+    <div><label>Speed</label><select id="replaySpeed"><option value="1500">Slow</option><option value="800" selected>Normal</option><option value="350">Fast</option></select></div>
+    <div><label>Mode</label><select id="replayMode"><option value="points">Points</option><option value="activity">Activity entries</option></select></div>
+  </div>
+  <input id="replaySlider" type="range" min="0" max="0" value="0" oninput="replaySliderChanged()" style="margin-top:14px">
+  <div class="toolbar" style="margin-top:12px">
+    <button class="btn" onclick="startReplay()">Play</button>
+    <button class="btn secondary" onclick="pauseReplay()">Pause</button>
+    <button class="btn secondary" onclick="replayStep(-1)">Previous</button>
+    <button class="btn secondary" onclick="replayStep(1)">Next</button>
+  </div>
+</div>
+<div id="replayContent" style="margin-top:14px"></div>
+</section>
+
+<section id="wrapped" class="page"><h1>Yearly Wrapped</h1>
+<div class="toolbar"><select id="wrappedYear" onchange="renderWrapped()"></select></div>
+<div id="wrappedContent"></div>
+</section>
+
+<section id="lab" class="page"><h1>Statistics Lab</h1>
+<div class="card">
+  <div class="form-grid">
+    <div><label>Compare type</label><select id="labCompareType" onchange="renderLab()"><option value="people">People</option><option value="source">Source</option><option value="gender">Gender</option><option value="contentType">Content type</option></select></div>
+    <div><label>First item</label><select id="labA" onchange="renderLab()"></select></div>
+    <div><label>Second item</label><select id="labB" onchange="renderLab()"></select></div>
+    <div><label>Metric</label><select id="labMetric" onchange="renderLab()"><option value="points">Points</option><option value="activity">Activity entries</option></select></div>
+    <div><label>Period</label><select id="labPeriod" onchange="renderLab()"><option value="month">By month</option><option value="year">By year</option></select></div>
+  </div>
+</div>
+<div id="labContent" style="margin-top:14px"></div>
+</section>
+<section id="settings" class="page"><h1>Settings & Backup</h1><div class="install-note"><b>Important:</b> Never open <code>service-worker.js</code> directly. It is registered automatically by the app when hosted.<br><br><b>Phone use:</b> this app works best when opened from a normal web address, not directly from the Files app. A hosted/installable build is included in this version.</div><p class="small">Personal Stats v1.0 · Full Release</p><div class="two"><div class="card"><h2>Targets</h2><div class="form-grid"><div><label>Brenda target</label><input type="number" id="setBrenda"></div><div><label>Grand total target</label><input type="number" id="setGrand"></div><div><label>Attention after days</label><input type="number" id="setAttention"></div></div><button class="btn" style="margin-top:14px" onclick="saveSettings()">Save settings</button></div><div class="card"><h2>Data</h2><button class="btn secondary" onclick="exportData()">Export backup</button><input type="file" id="importFile" accept=".json" onchange="importData(event)" style="margin-top:12px"><button class="btn danger" style="margin-top:12px" onclick="resetData()">Reset app</button></div></div>
+<div class="card" style="margin-top:14px">
+<h2>Appearance & privacy</h2>
+<div class="form-grid">
+<div><label>Theme</label><select id="themeSelect" onchange="applyThemeFromSettings()"><option value="midnight">Midnight</option><option value="purple">Purple</option><option value="green">Green</option><option value="pink">Pink</option><option value="amber">Amber</option><option value="light">Light</option></select></div>
+<div><label>Accent colour</label><input id="accentPicker" type="color" value="#60a5fa" onchange="applyThemeFromSettings()"></div>
+<div><label>PIN lock</label><input id="pinInput" inputmode="numeric" maxlength="8" placeholder="Optional"></div>
+</div>
+<div class="toolbar" style="margin-top:12px"><button class="btn" onclick="saveAppearanceSettings()">Save appearance</button><button class="btn secondary" onclick="lockApp()">Lock now</button></div>
+</div>
+</section>
+</main>
+</div>
+<div class="mobilebar" id="mobileNav"></div>
+<div class="app-lock" id="appLock">
+  <div class="lock-card">
+    <h2>Personal Stats</h2>
+    <p class="small">Enter your PIN to unlock.</p>
+    <input id="unlockPin" inputmode="numeric" maxlength="8">
+    <button class="btn" onclick="unlockApp()" style="margin-top:12px;width:100%">Unlock</button>
+  </div>
+</div>
+
+
+
+<div class="modal" id="editProfileModal"><div class="modal-card">
+<div class="modal-head"><h2>Edit profile</h2><button class="iconbtn" onclick="closeProfileModal()">×</button></div>
+<input type="hidden" id="editId"><div class="form-grid">
+<div><label>Name</label><input id="editName"></div><div><label>Total</label><input id="editTotal" type="number" min="0"></div>
+<div><label>Birthday</label><input id="editBirthday" type="date"></div><div><label>Source</label><input id="editSource"></div>
+<div><label>Gender</label><input id="editGender"></div><div><label>Content type</label><input id="editType"></div>
+<div><label>First logged</label><input id="editFirstLogged" type="date"></div><div><label>Last logged</label><input id="editLastLogged" type="date"></div>
+<div><label>Active</label><select id="editActive"><option value="true">Yes</option><option value="false">No</option></select></div>
+<div><label>Favourite</label><select id="editFavourite"><option value="false">No</option><option value="true">Yes</option></select></div>
+<div><label>Crush</label><select id="editCrush"><option value="false">No</option><option value="true">Yes</option></select></div>
+<div><label>Kissed</label><select id="editKissed"><option value="false">No</option><option value="true">Yes</option></select></div>
+<div><label>Had sex</label><select id="editHadSex"><option value="false">No</option><option value="true">Yes</option></select></div>
+</div>
+<div style="margin-top:14px">
+  <label>Profile picture</label>
+  <div class="toolbar">
+    <input id="editImageFile" type="file" accept="image/*" onchange="previewProfileImage(event)">
+    <button class="btn secondary" type="button" onclick="removeProfileImage()">Remove picture</button>
+  </div>
+  <img id="editImagePreview" class="image-preview" alt="Profile preview">
+</div>
+
+<div style="margin-top:14px">
+  <label>Photo library</label>
+  <input id="editMoreImages" type="file" accept="image/*" multiple onchange="previewMoreProfileImages(event)">
+  <div id="editPhotoLibrary" class="photo-library"></div>
+</div>
+<div style="margin-top:12px"><label>Notes</label><textarea id="editNotes" rows="4"></textarea></div>
+<div class="toolbar" style="margin-top:14px"><button class="btn" onclick="saveProfileEdit()">Save profile</button><button class="btn secondary" onclick="closeProfileModal()">Cancel</button></div>
+</div></div>
+
+<div class="modal" id="challengeModal">
+ <div class="modal-card">
+  <div class="modal-head"><h2 id="challengeModalTitle">Add challenge</h2><button class="iconbtn" onclick="closeChallengeModal()">×</button></div>
+  <input type="hidden" id="challengeEditId">
+  <div class="form-grid">
+   <div><label>Name</label><input id="challengeName"></div>
+   <div><label>Target</label><input id="challengeTarget" type="number" min="1"></div>
+   <div><label>Current / Best</label><input id="challengeCurrent" type="number" min="0"></div>
+   <div><label>Status</label><select id="challengeStatus"><option>Active</option><option>Completed</option><option>Failed</option><option>Paused</option></select></div>
+   <div><label>Deadline</label><input id="challengeDeadline" type="date"></div>
+   <div><label>Automatic source</label><select id="challengeAutoType"><option value="">Manual</option><option value="grandTotal">Grand total</option><option value="centuryCount">People at 100+</option><option value="everyoneMinimum">Minimum person total</option></select></div>
+  </div>
+  <div style="margin-top:12px"><label>Description</label><textarea id="challengeDescription" rows="3"></textarea></div>
+  <div style="margin-top:12px"><label>Notes</label><textarea id="challengeNotes" rows="3"></textarea></div>
+  <div class="toolbar" style="margin-top:14px"><button class="btn" onclick="saveChallenge()">Save</button><button class="btn secondary" onclick="closeChallengeModal()">Cancel</button></div>
+ </div>
+</div>
+
+<div class="modal" id="attemptModal">
+ <div class="modal-card">
+  <div class="modal-head"><h2>Record attempt</h2><button class="iconbtn" onclick="closeAttemptModal()">×</button></div>
+  <input type="hidden" id="attemptChallengeId">
+  <div class="form-grid">
+   <div><label>Date</label><input id="attemptDate" type="date"></div>
+   <div><label>Result</label><select id="attemptResult"><option>Success</option><option>Fail</option><option>In progress</option></select></div>
+   <div><label>Score / progress</label><input id="attemptScore" type="number" min="0"></div>
+  </div>
+  <div style="margin-top:12px"><label>Notes</label><textarea id="attemptNotes" rows="3"></textarea></div>
+  <div class="toolbar" style="margin-top:14px"><button class="btn" onclick="saveAttempt()">Save attempt</button><button class="btn secondary" onclick="closeAttemptModal()">Cancel</button></div>
+ </div>
+</div>
+
+
+<div class="modal" id="editAttemptModal">
+ <div class="modal-card">
+  <div class="modal-head"><h2>Edit attempt</h2><button class="iconbtn" onclick="closeEditAttemptModal()">×</button></div>
+  <input type="hidden" id="editAttemptId">
+  <div class="form-grid">
+   <div><label>Date</label><input id="editAttemptDate" type="date"></div>
+   <div><label>Result</label><select id="editAttemptResult"><option>Success</option><option>Fail</option><option>In progress</option></select></div>
+   <div><label>Score / progress</label><input id="editAttemptScore" type="number" min="0"></div>
+  </div>
+  <div style="margin-top:12px"><label>Notes</label><textarea id="editAttemptNotes" rows="3"></textarea></div>
+  <div class="toolbar" style="margin-top:14px">
+   <button class="btn" onclick="saveAttemptEdit()">Save changes</button>
+   <button class="btn danger" onclick="deleteAttempt()">Delete attempt</button>
+   <button class="btn secondary" onclick="closeEditAttemptModal()">Cancel</button>
+  </div>
+ </div>
+</div>
+
+
+<div class="modal" id="customAchievementModal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Custom achievement</h2><button class="iconbtn" onclick="closeCustomAchievementModal()">×</button></div>
+    <input type="hidden" id="customAchievementId">
+    <div class="form-grid">
+      <div><label>Name</label><input id="customAchievementName"></div>
+      <div><label>Icon / emoji</label><input id="customAchievementIcon" value="🏆"></div>
+      <div><label>Rule</label><select id="customAchievementRule">
+        <option value="grandTotal">Grand total reaches</option>
+        <option value="activityCount">Activity entries reach</option>
+        <option value="historicalCount">Historical entries reach</option>
+        <option value="peopleAtLeast">Number of people at or above total</option>
+        <option value="categoryComplete">Everyone in category reaches total</option>
+      </select></div>
+      <div><label>Target</label><input id="customAchievementTarget" type="number" min="1" value="100"></div>
+      <div><label>Category / people count</label><input id="customAchievementCategory"></div>
+    </div>
+    <div style="margin-top:12px"><label>Description</label><textarea id="customAchievementDescription" rows="3"></textarea></div>
+    <div class="toolbar" style="margin-top:14px">
+      <button class="btn" onclick="saveCustomAchievement()">Save</button>
+      <button class="btn secondary" onclick="closeCustomAchievementModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const INITIAL_DATA = {"people": [{"id": "p1", "name": "Sion Farmer", "total": 8, "source": "Work", "gender": "Male", "contentType": "Named person", "birthday": "2005-01-25", "lastLogged": "=IF(A2=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A2)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A2),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A2,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A2=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A2),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p2", "name": "Katie Wright", "total": 19, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-11-14", "lastLogged": "=IF(A3=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A3)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A3),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A3,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A3=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A3),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p3", "name": "Lexie Moore", "total": 9, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-09-17", "lastLogged": "=IF(A4=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A4)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A4),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A4,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A4=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A4),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p4", "name": "Jaya Scott", "total": 50, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-03-05", "lastLogged": "=IF(A5=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A5)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A5),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A5,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A5=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A5),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p5", "name": "Amelia Humphries", "total": 101, "source": "Friend", "gender": "Female", "contentType": "Named person", "birthday": "2004-10-24", "lastLogged": "=IF(A6=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A6)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A6),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A6,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A6=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A6),Log!$A$2:$A$1001),\"\"))", "notes": "Third to 100"}, {"id": "p6", "name": "Emily Offland", "total": 24, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-06-05", "lastLogged": "=IF(A7=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A7)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A7),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A7,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A7=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A7),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p7", "name": "Evie Cruickshank", "total": 25, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2006-03-17", "lastLogged": "=IF(A8=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A8)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A8),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A8,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A8=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A8),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p8", "name": "Gracie Jones", "total": 25, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-02-17", "lastLogged": "=IF(A9=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A9)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A9),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A9,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A9=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A9),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p9", "name": "Heidi Owen", "total": 90, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-11-12", "lastLogged": "=IF(A10=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A10)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A10),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A10,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A10=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A10),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p10", "name": "Kaitlin Elis", "total": 39, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-04-04", "lastLogged": "=IF(A11=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A11)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A11),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A11,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A11=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A11),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p11", "name": "Leila Hiaat", "total": 70, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-11-19", "lastLogged": "=IF(A12=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A12)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A12),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A12,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A12=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A12),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p12", "name": "Shauna Garbutt", "total": 33, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-06-23", "lastLogged": "=IF(A13=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A13)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A13),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A13,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A13=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A13),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p13", "name": "Miri Fenton", "total": 13, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2006-01-27", "lastLogged": "=IF(A14=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A14)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A14),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A14,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A14=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A14),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p14", "name": "Sara Roberts", "total": 32, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-02-13", "lastLogged": "=IF(A15=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A15)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A15),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A15,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A15=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A15),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p15", "name": "Tina Day", "total": 10, "source": "Online", "gender": "Female", "contentType": "Named person", "birthday": "2006-12-09", "lastLogged": "=IF(A16=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A16)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A16),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A16,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A16=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A16),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p16", "name": "Holly Wyre", "total": 30, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2006-02-23", "lastLogged": "=IF(A17=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A17)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A17),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A17,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A17=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A17),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p17", "name": "Holly Davies", "total": 14, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-06-19", "lastLogged": "=IF(A18=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A18)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A18),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A18,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A18=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A18),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p18", "name": "Holly Bishop", "total": 52, "source": "Friend", "gender": "Female", "contentType": "Named person", "birthday": "2005-09-27", "lastLogged": "=IF(A19=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A19)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A19),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A19,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A19=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A19),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p19", "name": "Laura Anna", "total": 30, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-11-26", "lastLogged": "=IF(A20=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A20)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A20),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A20,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A20=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A20),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p20", "name": "Alana Bradley", "total": 3, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-03-30", "lastLogged": "=IF(A21=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A21)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A21),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A21,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A21=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A21),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p21", "name": "Lili Lloyd", "total": 34, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-11-21", "lastLogged": "=IF(A22=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A22)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A22),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A22,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A22=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A22),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p22", "name": "Phoebe Gordon", "total": 26, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-06-14", "lastLogged": "=IF(A23=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A23)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A23),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A23,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A23=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A23),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p23", "name": "Zara Rose", "total": 24, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-10-07", "lastLogged": "=IF(A24=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A24)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A24),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A24,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A24=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A24),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p24", "name": "Hermione Derry", "total": 7, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-10-21", "lastLogged": "=IF(A25=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A25)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A25),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A25,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A25=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A25),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p25", "name": "Teigan Mountford", "total": 25, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-11-11", "lastLogged": "=IF(A26=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A26)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A26),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A26,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A26=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A26),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p26", "name": "Ellie Hughes", "total": 29, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-10-28", "lastLogged": "=IF(A27=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A27)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A27),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A27,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A27=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A27),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p27", "name": "Honor Elizabeth", "total": 30, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-09-11", "lastLogged": "=IF(A28=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A28)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A28),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A28,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A28=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A28),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p28", "name": "Esme Matthews", "total": 20, "source": "Online", "gender": "Female", "contentType": "Named person", "birthday": "2005-01-28", "lastLogged": "=IF(A29=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A29)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A29),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A29,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A29=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A29),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p29", "name": "Jessica Griffiths", "total": 20, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-10-28", "lastLogged": "=IF(A30=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A30)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A30),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A30,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A30=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A30),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p30", "name": "Sara Williams", "total": 9, "source": "Online", "gender": "Female", "contentType": "Named person", "birthday": "2004-12-31", "lastLogged": "=IF(A31=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A31)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A31),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A31,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A31=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A31),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p31", "name": "Shaylie May", "total": 14, "source": "Online", "gender": "Female", "contentType": "Named person", "birthday": "2006-03-24", "lastLogged": "=IF(A32=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A32)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A32),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A32,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A32=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A32),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p32", "name": "Lara Jones", "total": 17, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-12-10", "lastLogged": "=IF(A33=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A33)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A33),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A33,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A33=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A33),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p33", "name": "Begw Tomos", "total": 5, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-12-24", "lastLogged": "=IF(A34=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A34)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A34),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A34,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A34=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A34),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p34", "name": "Ellie Corcoran", "total": 8, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-10-07", "lastLogged": "=IF(A35=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A35)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A35),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A35,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A35=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A35),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p35", "name": "Brenda Davies", "total": 181, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "1997-03-12", "lastLogged": "=IF(A36=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A36)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A36),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A36,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A36=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A36),Log!$A$2:$A$1001),\"\"))", "notes": "First to 100"}, {"id": "p36", "name": "Joanna Davies", "total": 32, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "2002-09-11", "lastLogged": "=IF(A37=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A37)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A37),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A37,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A37=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A37),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p37", "name": "Briony Rigby", "total": 141, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "1996-09-08", "lastLogged": "=IF(A38=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A38)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A38),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A38,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A38=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A38),Log!$A$2:$A$1001),\"\"))", "notes": "Second to 100"}, {"id": "p38", "name": "Abi Rigby", "total": 3, "source": "Friend", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A39=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A39)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A39),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A39,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A39=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A39),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p39", "name": "Ellise Warrilow", "total": 43, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "2000-12-11", "lastLogged": "=IF(A40=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A40)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A40),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A40,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A40=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A40),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p40", "name": "Haf Jones", "total": 4, "source": "Friend's Parent", "gender": "Female", "contentType": "Named person", "birthday": "1981-08-24", "lastLogged": "=IF(A41=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A41)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A41),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A41,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A41=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A41),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p41", "name": "Leah Evans", "total": 10, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-06-02", "lastLogged": "=IF(A42=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A42)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A42),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A42,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A42=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A42),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p42", "name": "Kelly Myring", "total": 29, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "1996-09-04", "lastLogged": "=IF(A43=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A43)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A43),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A43,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A43=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A43),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p43", "name": "Anna Haf", "total": 24, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "1998-03-30", "lastLogged": "=IF(A44=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A44)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A44),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A44,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A44=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A44),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p44", "name": "Lowri Faber", "total": 2, "source": "Friend", "gender": "Non-binary", "contentType": "Named person", "birthday": "1997-06-28", "lastLogged": "=IF(A45=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A45)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A45),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A45,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A45=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A45),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p45", "name": "Jess Harley", "total": 3, "source": "University", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A46=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A46)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A46),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A46,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A46=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A46),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p46", "name": "Heledd Pugh", "total": 9, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "2001-03-01", "lastLogged": "=IF(A47=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A47)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A47),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A47,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A47=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A47),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p47", "name": "Eva Shepherd", "total": 5, "source": "Online", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A48=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A48)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A48),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A48,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A48=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A48),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p48", "name": "Charlie Moore", "total": 7, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2005-04-16", "lastLogged": "=IF(A49=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A49)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A49),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A49,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A49=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A49),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p49", "name": "Liv Williams", "total": 7, "source": "University", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A50=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A50)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A50),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A50,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A50=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A50),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p50", "name": "Fungus Dove", "total": 16, "source": "Work", "gender": "Non-binary", "contentType": "Named person", "birthday": "1998-01-07", "lastLogged": "=IF(A51=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A51)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A51),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A51,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A51=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A51),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p51", "name": "Sophie Jones", "total": 4, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A52=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A52)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A52),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A52,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A52=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A52),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p52", "name": "Karina Kolesnikaite", "total": 2, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "1998-09-22", "lastLogged": "=IF(A53=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A53)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A53),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A53,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A53=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A53),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p53", "name": "Victoria Gilvear", "total": 4, "source": "University", "gender": "Female", "contentType": "Named person", "birthday": "2005-07-30", "lastLogged": "=IF(A54=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A54)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A54),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A54,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A54=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A54),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p54", "name": "Megan Gilvear", "total": 4, "source": "University", "gender": "Female", "contentType": "Named person", "birthday": "2005-07-30", "lastLogged": "=IF(A55=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A55)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A55),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A55,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A55=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A55),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p55", "name": "Lucy Johnson", "total": 3, "source": "University", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A56=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A56)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A56),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A56,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A56=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A56),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p56", "name": "Emma Lewis", "total": 10, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "1990-01-04", "lastLogged": "=IF(A57=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A57)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A57),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A57,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A57=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A57),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p57", "name": "Abigail Fletcher", "total": 20, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "2002-03-16", "lastLogged": "=IF(A58=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A58)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A58),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A58,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A58=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A58),Log!$A$2:$A$1001),\"\"))", "notes": "First with PP"}, {"id": "p58", "name": "Suisie Graves", "total": 1, "source": "Friend's Parent", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A59=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A59)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A59),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A59,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A59=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A59),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p59", "name": "Josh Graves", "total": 5, "source": "Work", "gender": "Trans woman", "contentType": "Named person", "birthday": "2004-06-24", "lastLogged": "=IF(A60=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A60)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A60),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A60,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A60=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A60),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p60", "name": "Poppy Boast", "total": 1, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A61=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A61)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A61),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A61,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A61=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A61),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p61", "name": "Storm Smith", "total": 1, "source": "Online", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A62=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A62)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A62),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A62,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A62=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A62),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p62", "name": "Lexie Thomas", "total": 0, "source": "University", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A63=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A63)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A63),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A63,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A63=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A63),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p63", "name": "Elise Faragher", "total": 3, "source": "School", "gender": "Female", "contentType": "Named person", "birthday": "2004-10-17", "lastLogged": "=IF(A64=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A64)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A64),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A64,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A64=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A64),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p64", "name": "Frankie May", "total": 1, "source": "Online", "gender": "Female", "contentType": "Named person", "birthday": "2003-12-04", "lastLogged": "=IF(A65=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A65)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A65),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A65,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A65=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A65),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p65", "name": "Elysha Pearson", "total": 0, "source": "Online", "gender": "Female", "contentType": "Named person", "birthday": "2001-10-09", "lastLogged": "=IF(A66=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A66)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A66),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A66,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A66=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A66),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p66", "name": "Silva Jones", "total": 1, "source": "Work", "gender": "Female", "contentType": "Named person", "birthday": "", "lastLogged": "=IF(A67=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A67)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A67),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A67,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A67=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A67),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p67", "name": "Porn", "total": 0, "source": "Porn", "gender": "Unknown/Other", "contentType": "Porn", "birthday": "", "lastLogged": "=IF(A68=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A68)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A68),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A68,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A68=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A68),Log!$A$2:$A$1001),\"\"))", "notes": ""}, {"id": "p68", "name": "Penis", "total": 0, "source": "Other", "gender": "Unknown/Other", "contentType": "Penis", "birthday": "", "lastLogged": "=IF(A69=\"\",\"\",IF(COUNTIF(Log!$B$2:$B$1001,A69)>0,LOOKUP(2,1/(Log!$B$2:$B$1001=A69),Log!$A$2:$A$1001),IFERROR(VLOOKUP(A69,Lists!$H$2:$I$200,2,FALSE),\"\")))", "favourite": false, "crush": false, "active": true, "kissed": false, "hadSex": false, "firstLogged": "=IF(A69=\"\",\"\",IFERROR(LOOKUP(2,1/(Log!$B$2:$B$1001=A69),Log!$A$2:$A$1001),\"\"))", "notes": ""}], "logs": [], "challengeAttempts": [], "settings": {"brendaTarget": 300, "grandTotalTarget": 2000, "centuryClubTarget": 5, "everyoneMinimum": 10, "attentionDays": 30}, "challenges": {"theSix": ["Brenda Davies", "Briony Rigby", "Fungus Dove", "Anna Haf", "Joanna Davies", "Ellise Warrilow"]}};
+const STORAGE_KEY = "personalStatsAppV1";
+let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || structuredClone(INITIAL_DATA);
+function normaliseData(){
+ if(!data || typeof data!=="object") data=structuredClone(INITIAL_DATA);
+ if(!Array.isArray(data.people)) data.people=[];
+ if(!Array.isArray(data.logs)) data.logs=[];
+ if(!Array.isArray(data.historicalDates)) data.historicalDates=[];
+ if(!Array.isArray(data.challengeAttempts)) data.challengeAttempts=[];
+ if(!Array.isArray(data.customChallenges)) data.customChallenges=[];
+ if(!Array.isArray(data.unlockedAchievements)) data.unlockedAchievements=[];
+ if(!Array.isArray(data.customAchievements)) data.customAchievements=[];
+ if(!data.appearance) data.appearance={theme:"midnight",accent:"#60a5fa",pin:""};
+ if(!data.seasonNotes) data.seasonNotes={};
+ if(!data.settings) data.settings={};
+ if(data.settings.brendaTarget==null) data.settings.brendaTarget=300;
+ if(data.settings.grandTotalTarget==null) data.settings.grandTotalTarget=2000;
+ if(data.settings.centuryClubTarget==null) data.settings.centuryClubTarget=5;
+ if(data.settings.everyoneMinimum==null) data.settings.everyoneMinimum=10;
+ if(data.settings.attentionDays==null) data.settings.attentionDays=30;
+ if(!data.challenges) data.challenges={};
+ if(!Array.isArray(data.challenges.theSix)) data.challenges.theSix=["Brenda Davies","Briony Rigby","Fungus Dove","Anna Haf","Joanna Davies","Ellise Warrilow"];
+ data.people.forEach(function(p,i){
+   if(!p.id) p.id="p"+(i+1);
+   p.total=Number(p.total||0);
+   if(p.source==null) p.source="";
+   if(p.gender==null) p.gender="";
+   if(p.contentType==null) p.contentType="";
+   if(p.birthday==null) p.birthday="";
+   if(p.lastLogged==null) p.lastLogged="";
+   if(p.firstLogged==null) p.firstLogged="";
+   if(p.notes==null) p.notes="";
+   if(p.image==null) p.image="";
+   if(!Array.isArray(p.images)) p.images=p.image?[p.image]:[];
+   if(p.favouriteImageIndex==null) p.favouriteImageIndex=0;
+   p.favourite=Boolean(p.favourite);
+   p.crush=Boolean(p.crush);
+   p.active=p.active!==false;
+   p.kissed=Boolean(p.kissed);
+   p.hadSex=Boolean(p.hadSex);
+ });
+}
+normaliseData();
+
+data.customChallenges ||= [
+ {id:"c-grand",name:"Grand Total 2,000",description:"Reach the overall lifetime target",target:data.settings.grandTotalTarget||2000,current:0,status:"Active",deadline:"",autoType:"grandTotal",notes:""},
+ {id:"c-century",name:"Five people reach 100",description:"Grow the Century Club",target:data.settings.centuryClubTarget||5,current:0,status:"Active",deadline:"",autoType:"centuryCount",notes:""},
+ {id:"c-everyone",name:"Everyone reaches 10",description:"Every active entry reaches at least 10",target:data.settings.everyoneMinimum||10,current:0,status:"Active",deadline:"",autoType:"everyoneMinimum",notes:""}
+];
+data.challengeAttempts ||= [];
+data.unlockedAchievements ||= [];
+data.seasonNotes ||= {};
+
+
+let wheelFilters = {source:new Set(),gender:new Set(),type:new Set()};
+let spinning=false;
+
+const pages=[["dashboard","Home"],["people","People"],["log","Log"],["profile","Profile"],["challenges","Challenges"],["wheel","Wheel"],["stats","Stats"],["achievements","Achievements"],["seasons","Seasons"],["news","News"],["timeline","Timeline"],["gallery","Gallery"],["insights","Insights"],["calendar","Calendar"],["records","Records"],["replay","Replay"],["wrapped","Wrapped"],["lab","Stats Lab"],["settings","Settings"]];
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
+function navTo(id){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));renderAll();}
+function buildNav(){
+ const html=pages.map(([id,label])=>`<button data-page="${id}" onclick="navTo('${id}')">${label}</button>`).join("");
+ document.getElementById("desktopNav").innerHTML=html;
+ document.getElementById("mobileNav").innerHTML=pages.slice(0,5).map(([id,label])=>`<button onclick="navTo('${id}')">${label}</button>`).join("");
+}
+function today(){return new Date().toISOString().slice(0,10)}
+function daysSince(s){if(!s)return null;return Math.floor((new Date(today())-new Date(s))/86400000)}
+function birthday30(p){if(!p.birthday)return null;const d=new Date(p.birthday+"T00:00:00");d.setFullYear(d.getFullYear()+30);return d.toISOString().slice(0,10)}
+function league(t){if(t<10)return"Iron";if(t<25)return"Bronze";if(t<50)return"Silver";if(t<100)return"Gold";if(t<150)return"Platinum";if(t<250)return"Diamond";return"Master"}
+function ranked(){return [...data.people].sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name)).map((p,i)=>({...p,rank:i+1}));}
+function getPerson(idOrName){return data.people.find(p=>p.id===idOrName||p.name===idOrName)}
+function progress(cur,target){return Math.min(100,Math.round((cur/target)*100))}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+function renderDashboard(){
+ const r=ranked(), total=r.reduce((s,p)=>s+p.total,0), leader=r[0], month=today().slice(0,7);
+ const thisMonth=data.logs.filter(l=>l.date.startsWith(month)).reduce((s,l)=>s+l.amount,0), thisMonthActivity=activityForMonth(month).length;
+ const attention=r.filter(p=>p.lastLogged && daysSince(p.lastLogged)>data.settings.attentionDays).sort((a,b)=>daysSince(b.lastLogged)-daysSince(a.lastLogged)).slice(0,5);
+ const br=getPerson("Brenda Davies"), goal=data.settings.brendaTarget, bday=br?birthday30(br):null, days=bday?Math.max(0,Math.ceil((new Date(bday)-new Date(today()))/86400000)):0, remain=br?Math.max(0,goal-br.total):0, pace=days?remain/days:0;
+ document.getElementById("dashboardContent").innerHTML=`
+ <div class="grid">
+  <div class="card metric"><div class="label">Grand total</div><div class="value">${total}</div></div>
+  <div class="card metric"><div class="label">People tracked</div><div class="value">${r.length}</div></div>
+  <div class="card metric"><div class="label">This month</div><div class="value">${thisMonth}</div><div class="small">${thisMonthActivity} activity entries</div></div>
+  <div class="card metric"><div class="label">Current leader</div><div class="value">${esc(leader?.name||"—")}</div></div>
+ </div>
+ <div class="two">
+  <div class="card"><h2>Brenda → ${goal}</h2><div>${br?.total||0} / ${goal}</div><div class="progress"><span style="width:${progress(br?.total||0,goal)}%"></span></div><p>${remain} remaining · ${pace.toFixed(2)} per day · once every ${pace? (1/pace).toFixed(1):"—"} days</p></div>
+  <div class="card"><h2>Needs attention</h2>${attention.length?attention.map(p=>`<div>${esc(p.name)} <span class="warn">${daysSince(p.lastLogged)} days</span></div>`).join(""):"<p class='good'>Nothing urgent</p>"}</div>
+ </div>
+ <div class="two">
+  <div class="card"><h2>Top 10</h2>${r.slice(0,10).map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0"><span>#${p.rank} ${esc(p.name)}</span><b>${p.total}</b></div>`).join("")}</div>
+  <div class="card"><h2>Quick actions</h2><div class="toolbar"><button class="btn" onclick="navTo('log')">Log entry</button><button class="btn secondary" onclick="navTo('wheel')">Spin wheel</button><button class="btn secondary" onclick="navTo('challenges')">Challenges</button></div></div>
+ </div>`;
+}
+function renderPeople(){
+ const q=(document.getElementById("peopleSearch")?.value||"").toLowerCase();
+ document.getElementById("peopleTable").innerHTML=ranked().filter(p=>p.name.toLowerCase().includes(q)).map(p=>`<tr onclick="document.getElementById('profileSelect').value='${p.id}';navTo('profile')" style="cursor:pointer"><td>#${p.rank}</td><td>${esc(p.name)}</td><td>${p.total}</td><td>${esc(p.source)}</td><td>${esc(p.gender)}</td><td><span class="badge">${league(p.total)}</span></td><td>${p.lastLogged||"—"}</td></tr>`).join("");
+}
+function populateSelects(){
+ const alphabetical=[...data.people].sort(function(a,b){return a.name.localeCompare(b.name,undefined,{sensitivity:"base"});});
+ const opts=alphabetical.map(function(p){return `<option value="${p.id}">${esc(p.name)}</option>`;}).join("");
+ const lp=document.getElementById("logPerson");
+ const ps=document.getElementById("profileSelect");
+ if(lp){const old=lp.value;lp.innerHTML=opts;if(old)lp.value=old;}
+ if(ps){const old=ps.value;ps.innerHTML=opts;if(old)ps.value=old;}
+ const dateInput=document.getElementById("logDate");
+ if(dateInput && !dateInput.value) dateInput.value=today();
+}
+function toggleHistoryOnly(){
+ const box=document.getElementById("historyOnly");
+ const amount=document.getElementById("logAmount");
+ const wrap=document.getElementById("amountWrap");
+ if(!box||!amount||!wrap)return;
+ amount.disabled=box.checked;
+ wrap.style.opacity=box.checked?".35":"1";
+}
+function addLog(){
+ const personSelect=document.getElementById("logPerson");
+ const p=getPerson(personSelect ? personSelect.value : "");
+ const dateInput=document.getElementById("logDate");
+ const date=(dateInput&&dateInput.value)||today();
+ if(!p)return alert("Choose a person.");
+ const noteInput=document.getElementById("logNote");
+ const note=noteInput?noteInput.value:"";
+ const historyBox=document.getElementById("historyOnly");
+ if(historyBox && historyBox.checked){
+   data.historicalDates.unshift({id:crypto.randomUUID(),personId:p.id,date:date,note:note});
+   if(!p.firstLogged||date<p.firstLogged)p.firstLogged=date;
+   if(!p.lastLogged||date>p.lastLogged)p.lastLogged=date;
+   save();renderAll();alert("Historical date saved without changing the total.");
+   return;
+ }
+ const amountInput=document.getElementById("logAmount");
+ const amount=Number((amountInput&&amountInput.value)||1);
+ if(amount<1)return alert("Enter an amount of at least 1.");
+ data.logs.unshift({id:crypto.randomUUID(),personId:p.id,date:date,amount:amount,note:note});
+ p.total+=amount;
+ if(!p.firstLogged||date<p.firstLogged)p.firstLogged=date;
+ if(!p.lastLogged||date>p.lastLogged)p.lastLogged=date;
+ save();renderAll();alert("Logged.");
+}
+function renderLogs(){
+ const counted=data.logs.map(function(l){return Object.assign({},l,{kind:"counted"});});
+ const historical=data.historicalDates.map(function(h){return Object.assign({},h,{kind:"history",amount:0});});
+ const rows=counted.concat(historical).sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,40);
+ const table=document.getElementById("recentLogs");
+ if(!table)return;
+ table.innerHTML=rows.map(function(l){
+   const name=esc((getPerson(l.personId)||{}).name||"?");
+   const type=l.kind==="history"?'<span class="history-badge">Historical</span>':"Counted";
+   const amount=l.kind==="history"?"—":l.amount;
+   return `<tr><td>${l.date}</td><td>${name}</td><td>${type}</td><td>${amount}</td><td>${esc(l.note||"")}</td></tr>`;
+ }).join("");
+}
+
+function milestoneInfo(total){
+ const levels=[10,25,50,100,150,250,300,500,750,1000];
+ const next=levels.find(function(x){return x>total;}) || Math.ceil((total+1)/500)*500;
+ const previous=[0].concat(levels).filter(function(x){return x<=total;}).pop() || 0;
+ const span=Math.max(1,next-previous);
+ return {
+   next:next,
+   previous:previous,
+   remaining:Math.max(0,next-total),
+   pct:Math.min(100,Math.round((total-previous)/span*100))
+ };
+}
+
+function birthdayCountdown(p){
+ if(!p.birthday)return null;
+ const b=new Date(p.birthday+"T00:00:00");
+ const now=new Date(today()+"T00:00:00");
+ let next=new Date(now.getFullYear(),b.getMonth(),b.getDate());
+ if(next<now)next.setFullYear(next.getFullYear()+1);
+ return {days:Math.ceil((next-now)/86400000),age:next.getFullYear()-b.getFullYear()};
+}
+function achievementsFor(p,rank){
+ const ds=daysSince(p.lastLogged);
+ return [
+  ["First 10",p.total>=10,"Reached 10"],
+  ["Silver Club",p.total>=25,"Reached 25"],
+  ["Gold Club",p.total>=50,"Reached 50"],
+  ["Century Club",p.total>=100,"Reached 100"],
+  ["Diamond",p.total>=150,"Reached 150"],
+  ["Master",p.total>=250,"Reached 250"],
+  ["Top 10",rank<=10,"Ranked in top 10"],
+  ["Top 3",rank<=3,"Ranked in top 3"],
+  ["Active Now",ds!==null&&ds<=7,"Activity in last 7 days"],
+  ["Profile Complete",Boolean(p.source&&p.gender&&p.contentType),"Core profile fields filled"]
+ ];
+}
+
+let pendingProfileImage=null;
+function compressImageFile(file,maxSize=700,quality=.72){
+ return new Promise(function(resolve,reject){
+   const reader=new FileReader();
+   reader.onload=function(){
+     const img=new Image();
+     img.onload=function(){
+       let width=img.width,height=img.height;
+       const scale=Math.min(1,maxSize/Math.max(width,height));
+       width=Math.round(width*scale);height=Math.round(height*scale);
+       const canvas=document.createElement("canvas");
+       canvas.width=width;canvas.height=height;
+       canvas.getContext("2d").drawImage(img,0,0,width,height);
+       resolve(canvas.toDataURL("image/jpeg",quality));
+     };
+     img.onerror=reject;
+     img.src=reader.result;
+   };
+   reader.onerror=reject;
+   reader.readAsDataURL(file);
+ });
+}
+async function previewProfileImage(event){
+ const file=event.target.files&&event.target.files[0];
+ if(!file)return;
+ try{
+   pendingProfileImage=await compressImageFile(file);
+   document.getElementById("editImagePreview").src=pendingProfileImage;
+ }catch(err){alert("Could not read that image.");}
+}
+function removeProfileImage(){
+ pendingProfileImage="";
+ const preview=document.getElementById("editImagePreview");
+ preview.removeAttribute("src");
+}
+function profileVisual(p,initials){
+ return p.image?`<div class="profile-image-wrap"><img src="${p.image}" alt="${esc(p.name)}"></div>`:`${profileVisual(p,initials)}`;
+}
+function renderProfile(){const p=getPerson(document.getElementById("profileSelect")?.value)||ranked()[0];if(!p)return;const rank=ranked().find(x=>x.id===p.id)?.rank,ds=daysSince(p.lastLogged),tracked=p.firstLogged?Math.max(1,daysSince(p.firstLogged)):null;const mile=milestoneInfo(p.total),bd=birthdayCountdown(p),ach=achievementsFor(p,rank);const initials=p.name.split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();document.getElementById("profileContent").innerHTML=`
+<div class="card profile-hero"><div class="avatar">${initials}</div><div><div class="small">#${rank} · ${league(p.total)}</div><h2 style="font-size:30px;margin:4px 0">${esc(p.name)}</h2><div class="tagrow">${p.source?`<span class="badge">${esc(p.source)}</span>`:""}${p.gender?`<span class="badge">${esc(p.gender)}</span>`:""}${p.contentType?`<span class="badge">${esc(p.contentType)}</span>`:""}${p.favourite?`<span class="badge">⭐ Favourite</span>`:""}${p.crush?`<span class="badge">❤️ Crush</span>`:""}</div><button class="btn secondary" style="margin-top:12px" onclick="editPerson('${p.id}')">Edit profile</button></div></div>
+<div class="grid" style="margin-top:14px"><div class="card metric"><div class="label">Lifetime total</div><div class="value">${p.total}</div></div><div class="card metric"><div class="label">Rank</div><div class="value">#${rank}</div></div><div class="card metric"><div class="label">Days since last</div><div class="value">${ds??"—"}</div></div><div class="card metric"><div class="label">Average/day</div><div class="value">${tracked?(p.total/tracked).toFixed(2):"—"}</div><div class="small">${personActivity(p.id).length} recorded activity dates</div></div></div>
+<div class="two"><div class="card"><h2>Next milestone</h2><div style="font-size:24px;font-weight:800">${mile.next}</div><div class="progress"><span style="width:${mile.pct}%"></span></div><p>${mile.remaining} remaining</p><div class="milestone-list">${[10,25,50,100,150,250,300,500].map(x=>`<div class="milestone-row"><span>${x}</span><div class="progress"><span style="width:${Math.min(100,p.total/x*100)}%"></span></div><b>${p.total>=x?"✓":Math.max(0,x-p.total)}</b></div>`).join("")}</div></div>
+<div class="card"><h2>Personal details</h2><p>Birthday: ${p.birthday||"—"}${bd?` <span class="small">(${bd.days} days · turning ${bd.age})</span>`:""}<br>First logged: ${p.firstLogged||"—"}<br>Last logged: ${p.lastLogged||"—"}<br>Kissed: ${p.kissed?"Yes":"No"}<br>Had sex: ${p.hadSex?"Yes":"No"}<br>Active: ${p.active?"Yes":"No"}</p>${p.notes?`<p class="small">${esc(p.notes)}</p>`:""}</div></div>
+<div class="card" style="margin-top:14px"><h2>Achievements</h2><div class="badge-grid">${ach.map(([n,u,d])=>`<div class="achievement ${u?"":"locked"}"><b>${u?"🏆":"🔒"} ${n}</b><div class="small">${d}</div></div>`).join("")}</div></div>
+ <div class="card" style="margin-top:14px"><h2>Past Logged</h2><div class="past-activity-list">${personActivity(p.id).sort((a,b)=>b.date.localeCompare(a.date)).map(a=>`<div class="past-activity-item"><span>${a.date}</span><div>${a.kind==="history"?'<span class="history-badge">Historical</span>':'<span class="badge">Counted</span>'}${a.note?` <span class="small">${esc(a.note)}</span>`:""}</div><b>${a.kind==="history"?"0 pts":"+"+a.points}</b></div>`).join("")||'<p class="small">No recorded activity yet.</p>'}</div></div>`;}
+function openAddPerson(){const name=prompt("Name");if(!name)return;data.people.push({id:crypto.randomUUID(),name,total:0,source:"Other",gender:"Unknown/Other",contentType:"Named person",birthday:"",lastLogged:"",favourite:false,crush:false,active:true,kissed:false,hadSex:false,firstLogged:"",notes:""});save();renderAll();}
+function editPerson(id){const p=getPerson(id);if(!p)return;editId.value=p.id;editName.value=p.name;editTotal.value=p.total;editBirthday.value=p.birthday||"";editSource.value=p.source||"";editGender.value=p.gender||"";editType.value=p.contentType||"";editFirstLogged.value=p.firstLogged||"";editLastLogged.value=p.lastLogged||"";editActive.value=String(!!p.active);editFavourite.value=String(!!p.favourite);editCrush.value=String(!!p.crush);editKissed.value=String(!!p.kissed);editHadSex.value=String(!!p.hadSex);editNotes.value=p.notes||"";pendingProfileImage=p.image||"";pendingPhotoLibrary=(p.images||[]).slice();renderPhotoLibraryEditor();const preview=document.getElementById("editImagePreview");if(pendingProfileImage)preview.src=pendingProfileImage;else preview.removeAttribute("src");editProfileModal.classList.add("open");}
+function closeProfileModal(){editProfileModal.classList.remove("open");}
+function saveProfileEdit(){const p=getPerson(editId.value);if(!p)return;p.name=editName.value.trim()||p.name;p.total=Math.max(0,Number(editTotal.value||0));p.birthday=editBirthday.value;p.source=editSource.value.trim();p.gender=editGender.value.trim();p.contentType=editType.value.trim();p.firstLogged=editFirstLogged.value;p.lastLogged=editLastLogged.value;p.active=editActive.value==="true";p.favourite=editFavourite.value==="true";p.crush=editCrush.value==="true";p.kissed=editKissed.value==="true";p.hadSex=editHadSex.value==="true";p.notes=editNotes.value;p.image=pendingProfileImage||"";p.images=pendingPhotoLibrary.slice();if(p.image&&!p.images.includes(p.image))p.images.unshift(p.image);save();closeProfileModal();renderAll();}
+
+let challengeTab="all";
+function automaticChallengeValue(c){
+ if(c.autoType==="grandTotal")return data.people.reduce((s,p)=>s+p.total,0);
+ if(c.autoType==="centuryCount")return data.people.filter(p=>p.total>=100).length;
+ if(c.autoType==="everyoneMinimum"){const active=data.people.filter(p=>p.active);return active.length?Math.min(...active.map(p=>p.total)):0;}
+ return Number(c.current||0);
+}
+function challengeAttemptsFor(id){return data.challengeAttempts.filter(a=>a.challengeId===id)}
+function challengeStats(c){
+ const attempts=challengeAttemptsFor(c.id), successes=attempts.filter(a=>a.result==="Success").length, fails=attempts.filter(a=>a.result==="Fail").length;
+ return {attempts:attempts.length,successes,fails,rate:attempts.length?Math.round(successes/attempts.length*100):0};
+}
+function setChallengeTab(tab,btn){challengeTab=tab;document.querySelectorAll("#challengeTabs button").forEach(b=>b.classList.remove("on"));btn.classList.add("on");renderChallenges();}
+function renderChallenges(){
+ const br=getPerson("Brenda Davies"), target=data.settings.brendaTarget, remain=Math.max(0,target-(br?.total||0)), bd=br?birthday30(br):null, days=bd?Math.max(0,Math.ceil((new Date(bd)-new Date(today()))/86400000)):0, pace=days?remain/days:0;
+ const six=data.challenges.theSix.map(n=>{const p=getPerson(n);const done=allActivity().some(function(a){return a.personId===p?.id&&a.date===today();});return{n,done}}), done=six.filter(x=>x.done).length;
+ const builtins=[
+  {id:"builtin-brenda",name:`Brenda → ${target}`,description:"Reach the target before her 30th birthday",target,current:br?.total||0,status:remain===0?"Completed":"Active",deadline:bd,notes:`${remain} remaining · ${pace.toFixed(2)} per day · once every ${pace?(1/pace).toFixed(1):"—"} days`,builtin:true},
+  {id:"builtin-six",name:"The Six",description:"Complete all six specified names in one day",target:6,current:done,status:done===6?"Completed":"Active",deadline:today(),notes:six.map(x=>`${x.done?"✅":"⬜"} ${x.n}`).join("\\n"),builtin:true}
+ ];
+ const custom=data.customChallenges.map(c=>({...c,current:automaticChallengeValue(c)}));
+ let all=[...builtins,...custom];
+ if(challengeTab!=="all"&&challengeTab!=="history")all=all.filter(c=>c.status.toLowerCase()===challengeTab);
+ if(challengeTab==="history"){
+   const rows=[...data.challengeAttempts].sort((a,b)=>b.date.localeCompare(a.date));
+   document.getElementById("challengeContent").innerHTML=`<div class="card" style="overflow:auto"><table><thead><tr><th>Date</th><th>Challenge</th><th>Result</th><th>Score</th><th>Notes</th><th>Actions</th></tr></thead><tbody>${rows.map(a=>`<tr><td>${a.date}</td><td>${esc(all.find(c=>c.id===a.challengeId)?.name||data.customChallenges.find(c=>c.id===a.challengeId)?.name||a.challengeId)}</td><td>${a.result}</td><td>${a.score??""}</td><td>${esc(a.notes||"")}</td><td><div class="attempt-actions"><button class="mini-btn" onclick="openEditAttemptModal('${a.id}')">Edit</button><button class="mini-btn" onclick="deleteAttemptById('${a.id}')">Delete</button></div></td></tr>`).join("")}</tbody></table></div>`;
+   return;
+ }
+ document.getElementById("challengeContent").innerHTML=`<div class="challenge-grid">${all.map(c=>{
+  const st=challengeStats(c), pct=Math.min(100,Math.round((c.current/c.target)*100)), remaining=Math.max(0,c.target-c.current), statusClass=c.status.toLowerCase();
+  return `<div class="challenge-card ${statusClass}">
+   <div class="challenge-head"><div><h2 style="margin-bottom:4px">${esc(c.name)}</h2><div class="small">${esc(c.description||"")}</div></div><span class="status-pill ${statusClass}">${c.status}</span></div>
+   <div class="challenge-meta"><div><span class="small">Current</span><b>${c.current}</b></div><div><span class="small">Target</span><b>${c.target}</b></div><div><span class="small">Remaining</span><b>${remaining}</b></div><div><span class="small">Attempts</span><b>${st.attempts}</b></div></div>
+   <div class="progress"><span style="width:${pct}%"></span></div><p class="small">${pct}% complete${c.deadline?` · deadline ${c.deadline}`:""}</p>
+   ${c.id==="builtin-six"?`<div class="six-list">${six.map(x=>`<div class="six-row"><span>${x.done?"✅":"⬜"} ${esc(x.n)}</span><b>${x.done?"Done":"Not yet"}</b></div>`).join("")}</div>`:(c.notes?`<p style="white-space:pre-line">${esc(c.notes)}</p>`:"")}
+   <div class="toolbar"><button class="btn secondary" onclick="openAttemptModal('${c.id}')">Record attempt</button>${c.builtin?"":`<button class="btn secondary" onclick="openChallengeModal('${c.id}')">Edit</button><button class="btn danger" onclick="deleteChallenge('${c.id}')">Delete</button>`}</div>
+  </div>`}).join("")}</div>`;
+}
+function openChallengeModal(id=""){
+ const c=data.customChallenges.find(x=>x.id===id);
+ challengeEditId.value=c?.id||"";challengeName.value=c?.name||"";challengeTarget.value=c?.target||"";challengeCurrent.value=c?.current||0;challengeStatus.value=c?.status||"Active";challengeDeadline.value=c?.deadline||"";challengeAutoType.value=c?.autoType||"";challengeDescription.value=c?.description||"";challengeNotes.value=c?.notes||"";challengeModalTitle.textContent=c?"Edit challenge":"Add challenge";challengeModal.classList.add("open");
+}
+function closeChallengeModal(){challengeModal.classList.remove("open")}
+function saveChallenge(){
+ const id=challengeEditId.value||crypto.randomUUID(), existing=data.customChallenges.find(x=>x.id===id);
+ const obj={id,name:challengeName.value.trim()||"Untitled challenge",target:Math.max(1,Number(challengeTarget.value||1)),current:Math.max(0,Number(challengeCurrent.value||0)),status:challengeStatus.value,deadline:challengeDeadline.value,autoType:challengeAutoType.value,description:challengeDescription.value,notes:challengeNotes.value};
+ if(existing)Object.assign(existing,obj);else data.customChallenges.push(obj);save();closeChallengeModal();renderAll();
+}
+function deleteChallenge(id){if(confirm("Delete this challenge?")){data.customChallenges=data.customChallenges.filter(c=>c.id!==id);data.challengeAttempts=data.challengeAttempts.filter(a=>a.challengeId!==id);save();renderAll();}}
+function openAttemptModal(id=""){
+ const choices=[
+  {id:"builtin-brenda",name:`Brenda → ${data.settings.brendaTarget}`},
+  {id:"builtin-six",name:"The Six"},
+  ...data.customChallenges
+ ];
+ let selected=id||choices[0]?.id;
+ if(!selected)return alert("Add a challenge first.");
+ if(!id){const names=choices.map((c,i)=>`${i+1}. ${c.name}`).join("\\n");const n=Number(prompt("Choose challenge:\\n"+names,"1"));selected=choices[n-1]?.id||choices[0].id;}
+ attemptChallengeId.value=selected;attemptDate.value=today();attemptResult.value="Success";attemptScore.value="";attemptNotes.value="";attemptModal.classList.add("open");
+}
+function closeAttemptModal(){attemptModal.classList.remove("open")}
+function saveAttempt(){
+ data.challengeAttempts.push({id:crypto.randomUUID(),challengeId:attemptChallengeId.value,date:attemptDate.value||today(),result:attemptResult.value,score:Number(attemptScore.value||0),notes:attemptNotes.value});
+ const c=data.customChallenges.find(x=>x.id===attemptChallengeId.value);if(c){c.current=Math.max(Number(c.current||0),Number(attemptScore.value||0));if(attemptResult.value==="Success")c.status="Completed";}
+ save();closeAttemptModal();renderAll();
+}
+
+function openEditAttemptModal(id){
+ const a=data.challengeAttempts.find(x=>x.id===id);if(!a)return;
+ editAttemptId.value=a.id;editAttemptDate.value=a.date;editAttemptResult.value=a.result;
+ editAttemptScore.value=a.score??0;editAttemptNotes.value=a.notes||"";
+ editAttemptModal.classList.add("open");
+}
+function closeEditAttemptModal(){editAttemptModal.classList.remove("open")}
+function saveAttemptEdit(){
+ const a=data.challengeAttempts.find(x=>x.id===editAttemptId.value);if(!a)return;
+ a.date=editAttemptDate.value||today();a.result=editAttemptResult.value;
+ a.score=Number(editAttemptScore.value||0);a.notes=editAttemptNotes.value;
+ const c=data.customChallenges.find(x=>x.id===a.challengeId);
+ if(c){
+   const attempts=data.challengeAttempts.filter(x=>x.challengeId===c.id);
+   c.current=Math.max(Number(c.current||0),...attempts.map(x=>Number(x.score||0)));
+   c.status=attempts.some(x=>x.result==="Success")?"Completed":"Active";
+ }
+ save();closeEditAttemptModal();renderAll();
+}
+function deleteAttempt(){
+ const id=editAttemptId.value;if(!id)return;
+ if(confirm("Delete this attempt?")){deleteAttemptById(id);closeEditAttemptModal();}
+}
+function deleteAttemptById(id){
+ const a=data.challengeAttempts.find(x=>x.id===id);
+ data.challengeAttempts=data.challengeAttempts.filter(x=>x.id!==id);
+ if(a){
+   const c=data.customChallenges.find(x=>x.id===a.challengeId);
+   if(c){
+     const attempts=data.challengeAttempts.filter(x=>x.challengeId===c.id);
+     c.current=attempts.length?Math.max(...attempts.map(x=>Number(x.score||0))):0;
+     c.status=attempts.some(x=>x.result==="Success")?"Completed":"Active";
+   }
+ }
+ save();renderAll();
+}
+function toggleChip(group,val,el){const s=wheelFilters[group];s.has(val)?s.delete(val):s.add(val);el.classList.toggle("on");drawWheel();}
+
+let wheelMode="spin";
+let currentRandomOrder=[];
+function setWheelMode(mode){
+ wheelMode=mode;
+ document.getElementById("spinMode").style.display=mode==="spin"?"block":"none";
+ document.getElementById("orderMode").style.display=mode==="order"?"block":"none";
+}
+function shuffleArray(arr){
+ const a=[...arr];
+ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+ return a;
+}
+function generateRandomOrder(){
+ const pool=eligible();
+ if(!pool.length){document.getElementById("randomOrderList").innerHTML='<p class="bad">No eligible names for these filters.</p>';return;}
+ const count=Math.max(1,Number(document.getElementById("orderCount").value||pool.length));
+ const noRepeats=document.getElementById("orderNoRepeats").checked;
+ let order=[];
+ if(noRepeats) order=shuffleArray(pool).slice(0,Math.min(count,pool.length));
+ else for(let i=0;i<count;i++) order.push(pool[Math.floor(Math.random()*pool.length)]);
+ currentRandomOrder=order;
+ document.getElementById("randomOrderList").innerHTML=order.map((p,i)=>`<div class="order-item"><div class="order-num">${i+1}</div><div><b>${esc(p.name)}</b><div class="small">${esc(p.source||"—")} · ${esc(p.gender||"—")} · ${league(p.total)}</div></div><span class="badge">${p.total}</span></div>`).join("");
+}
+async function copyRandomOrder(){
+ if(!currentRandomOrder.length)return alert("Generate an order first.");
+ const text=currentRandomOrder.map((p,i)=>`${i+1}. ${p.name}`).join("\n");
+ try{await navigator.clipboard.writeText(text);alert("Order copied.");}
+ catch{prompt("Copy this list:",text);}
+}
+function clearRandomOrder(){
+ currentRandomOrder=[];
+ document.getElementById("randomOrderList").innerHTML='<p class="small">Generate a list to begin.</p>';
+}
+function renderWheelFilters(){
+ const groups=[["source",[...new Set(data.people.map(p=>p.source).filter(Boolean))],"sourceChips"],["gender",[...new Set(data.people.map(p=>p.gender).filter(Boolean))],"genderChips"],["type",[...new Set(data.people.map(p=>p.contentType).filter(Boolean))],"typeChips"]];
+ groups.forEach(([g,vals,id])=>document.getElementById(id).innerHTML=vals.map(v=>`<span class="chip" onclick="toggleChip('${g}','${esc(v)}',this)">${esc(v)}</span>`).join(""));
+}
+function eligible(){
+ const active=document.getElementById("wheelActive")?.checked;
+ return data.people.filter(p=>(!active||p.active)&&(!wheelFilters.source.size||wheelFilters.source.has(p.source))&&(!wheelFilters.gender.size||wheelFilters.gender.has(p.gender))&&(!wheelFilters.type.size||wheelFilters.type.has(p.contentType)));
+}
+function drawWheel(rotation=0){
+ const c=document.getElementById("wheelCanvas");if(!c)return;const ctx=c.getContext("2d"),arr=eligible();ctx.clearRect(0,0,c.width,c.height);if(!arr.length){ctx.fillStyle="#94a3b8";ctx.font="30px sans-serif";ctx.fillText("No eligible entries",210,350);return;}
+ const a=2*Math.PI/arr.length;ctx.save();ctx.translate(350,350);ctx.rotate(rotation);
+ arr.forEach((p,i)=>{ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,330,i*a,(i+1)*a);ctx.closePath();ctx.fillStyle=`hsl(${(i*360/arr.length)%360} 55% 35%)`;ctx.fill();ctx.save();ctx.rotate(i*a+a/2);ctx.translate(190,0);ctx.rotate(Math.PI/2);ctx.fillStyle="white";ctx.font=`${Math.max(10,Math.min(18,240/arr.length))}px sans-serif`;ctx.textAlign="center";ctx.fillText(p.name.slice(0,22),0,0);ctx.restore();});ctx.restore();ctx.fillStyle="#f8fafc";ctx.beginPath();ctx.moveTo(350,5);ctx.lineTo(330,45);ctx.lineTo(370,45);ctx.closePath();ctx.fill();
+}
+function spinWheel(){
+ if(spinning)return;const arr=eligible();if(!arr.length)return;spinning=true;const selected=Math.floor(Math.random()*arr.length), rounds=6, target=rounds*2*Math.PI+(2*Math.PI-(selected+.5)*(2*Math.PI/arr.length));let start=null;
+ function anim(t){if(!start)start=t;const q=Math.min(1,(t-start)/3500),ease=1-Math.pow(1-q,3);drawWheel(target*ease);if(q<1)requestAnimationFrame(anim);else{document.getElementById("wheelResult").textContent=arr[selected].name;renderWheelProfile(arr[selected]);spinning=false;}}requestAnimationFrame(anim);
+}
+
+function renderWheelProfile(p){
+ if(!p){wheelProfile.innerHTML="";return;}
+ const r=ranked().find(x=>x.id===p.id), ds=daysSince(p.lastLogged), m=milestoneInfo(p.total);
+ wheelProfile.innerHTML=`
+  <div class="wheel-profile-row"><span>Rank</span><b>#${r?.rank||"—"}</b></div>
+  <div class="wheel-profile-row"><span>Total</span><b>${p.total}</b></div>
+  <div class="wheel-profile-row"><span>League</span><b>${league(p.total)}</b></div>
+  <div class="wheel-profile-row"><span>Source</span><b>${esc(p.source||"—")}</b></div>
+  <div class="wheel-profile-row"><span>Gender</span><b>${esc(p.gender||"—")}</b></div>
+  <div class="wheel-profile-row"><span>Days since last</span><b>${ds??"—"}</b></div>
+  <div class="wheel-profile-row"><span>Next milestone</span><b>${m.next} (${m.remaining} left)</b></div>`;
+}
+function clearWheelFilters(){Object.values(wheelFilters).forEach(s=>s.clear());document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));wheelResult.textContent="Ready";renderWheelProfile(null);drawWheel();}
+
+function aggregateBy(key,mode="total"){
+ const map={};
+ data.people.forEach(p=>{const k=p[key]||"Unknown";map[k]=(map[k]||0)+(mode==="count"?1:p.total);});
+ return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+}
+function chartBlock(title,rows){
+ const max=Math.max(1,...rows.map(x=>x[1]));
+ return `<div class="card"><h2>${title}</h2>${rows.map(([n,v])=>`<div class="chart-row"><span>${esc(n)}</span><div class="chartbar"><span style="width:${Math.round(v/max*100)}%"></span></div><b>${v}</b></div>`).join("")}</div>`;
+}
+
+function allActivity(){
+ const counted=data.logs.map(function(l){
+   return Object.assign({},l,{kind:"counted",activityCount:1,points:Number(l.amount||0)});
+ });
+ const historical=data.historicalDates.map(function(h){
+   return Object.assign({},h,{kind:"history",activityCount:1,points:0});
+ });
+ return counted.concat(historical);
+}
+function activityForMonth(month){
+ return allActivity().filter(function(a){return a.date&&a.date.slice(0,7)===month;});
+}
+function activityForYear(year){
+ return allActivity().filter(function(a){return a.date&&a.date.slice(0,4)===String(year);});
+}
+function personActivity(personId){
+ return allActivity().filter(function(a){return a.personId===personId;});
+}
+
+function renderStats(){
+ const target=document.getElementById("statsContent");if(!target)return;
+ const people=ranked();
+ const totals=people.map(function(p){return Number(p.total||0);});
+ const grand=totals.reduce(function(a,b){return a+b;},0);
+ const avg=people.length?grand/people.length:0;
+ const sorted=totals.slice().sort(function(a,b){return a-b;});
+ const median=sorted.length?(sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2):0;
+ const month=today().slice(0,7);
+ const monthActivity=activityForMonth(month);
+ const monthPoints=monthActivity.reduce(function(s,a){return s+a.points;},0);
+ const monthEvents=monthActivity.length;
+ const historicalThisMonth=monthActivity.filter(function(a){return a.kind==="history";}).length;
+ const year=today().slice(0,4);
+ const yearActivity=activityForYear(year);
+ const yearPoints=yearActivity.reduce(function(s,a){return s+a.points;},0);
+ const yearEvents=yearActivity.length;
+
+ function aggregatePeople(key){
+   const map={};
+   people.forEach(function(p){
+     const k=p[key]||"Unknown";
+     map[k]=(map[k]||0)+p.total;
+   });
+   return Object.entries(map).sort(function(a,b){return b[1]-a[1];});
+ }
+ function aggregateActivity(key){
+   const map={};
+   allActivity().forEach(function(a){
+     const p=getPerson(a.personId);
+     const k=(p&&p[key])||"Unknown";
+     map[k]=(map[k]||0)+1;
+   });
+   return Object.entries(map).sort(function(a,b){return b[1]-a[1];});
+ }
+ function chartBlock(title,rows){
+   const max=Math.max(1,...rows.map(function(x){return x[1];}));
+   return `<div class="card"><h2>${title}</h2>${rows.map(function(row){
+     const n=row[0],v=row[1];
+     return `<div class="chart-row"><span>${esc(n)}</span><div class="chartbar"><span style="width:${Math.round(v/max*100)}%"></span></div><b>${v}</b></div>`;
+   }).join("")}</div>`;
+ }
+
+ target.innerHTML=`
+ <div class="grid">
+  <div class="card metric"><div class="label">Lifetime points</div><div class="value">${grand}</div></div>
+  <div class="card metric"><div class="label">This month — points</div><div class="value">${monthPoints}</div></div>
+  <div class="card metric"><div class="label">This month — activity dates</div><div class="value">${monthEvents}</div></div>
+  <div class="card metric"><div class="label">Historical dates this month</div><div class="value">${historicalThisMonth}</div></div>
+ </div>
+ <div class="grid" style="margin-top:14px">
+  <div class="card metric"><div class="label">This year — points</div><div class="value">${yearPoints}</div></div>
+  <div class="card metric"><div class="label">This year — activity dates</div><div class="value">${yearEvents}</div></div>
+  <div class="card metric"><div class="label">Average total</div><div class="value">${avg.toFixed(1)}</div></div>
+  <div class="card metric"><div class="label">Median total</div><div class="value">${median.toFixed(1)}</div></div>
+ </div>
+ <div class="stats-grid" style="margin-top:14px">
+  ${chartBlock("Lifetime points by source",aggregatePeople("source"))}
+  ${chartBlock("Activity dates by source",aggregateActivity("source"))}
+  ${chartBlock("Lifetime points by gender",aggregatePeople("gender"))}
+  ${chartBlock("Activity dates by gender",aggregateActivity("gender"))}
+  ${chartBlock("Lifetime points by content type",aggregatePeople("contentType"))}
+  ${chartBlock("Activity dates by content type",aggregateActivity("contentType"))}
+ </div>
+ <div class="card" style="margin-top:14px">
+  <p class="small"><b>How historical dates work:</b> they count toward monthly/yearly activity totals and timelines, but add 0 to lifetime points.</p>
+ </div>`;
+}
+
+function allAchievements(){
+ const people=ranked();
+ const total=people.reduce(function(s,p){return s+p.total;},0);
+ const activity=allActivity();
+ const uniqueDays=new Set(activity.map(function(a){return a.date;})).size;
+ const months=new Set(activity.map(function(a){return a.date.slice(0,7);})).size;
+ const categories=new Set(data.people.map(function(p){return p.source;}).filter(Boolean)).size;
+ const todaySix=data.challenges.theSix.every(function(name){
+   const p=getPerson(name);
+   return activity.some(function(a){return a.personId===p?.id && a.date===today();});
+ });
+ return [
+  {id:"grand-100",name:"First Hundred",desc:"Grand total reaches 100",icon:"🎯",unlocked:total>=100},
+  {id:"grand-1000",name:"Four Digits",desc:"Grand total reaches 1,000",icon:"🏆",unlocked:total>=1000},
+  {id:"grand-2000",name:"Two Thousand Club",desc:"Grand total reaches 2,000",icon:"💎",unlocked:total>=2000},
+  {id:"century-1",name:"Century Club",desc:"At least one entry reaches 100",icon:"⭐",unlocked:people.some(function(p){return p.total>=100;})},
+  {id:"century-5",name:"Five Centuries",desc:"Five entries reach 100",icon:"🌟",unlocked:people.filter(function(p){return p.total>=100;}).length>=5},
+  {id:"diamond-1",name:"Diamond Leader",desc:"Someone reaches 150",icon:"💠",unlocked:people.some(function(p){return p.total>=150;})},
+  {id:"master-1",name:"Master Leader",desc:"Someone reaches 250",icon:"👑",unlocked:people.some(function(p){return p.total>=250;})},
+  {id:"top-gap-50",name:"Dominant Leader",desc:"First place leads by at least 50",icon:"🥇",unlocked:people.length>1&&(people[0].total-people[1].total)>=50},
+  {id:"six",name:"Completed The Six",desc:"Complete all six in one day",icon:"6️⃣",unlocked:todaySix},
+  {id:"days-30",name:"30 Active Days",desc:"Activity on 30 different dates",icon:"📅",unlocked:uniqueDays>=30},
+  {id:"months-12",name:"Full Year",desc:"Activity in 12 different months",icon:"🗓️",unlocked:months>=12},
+  {id:"categories-8",name:"Collector",desc:"Use at least eight source categories",icon:"🧩",unlocked:categories>=8},
+  {id:"all-10",name:"Everyone Bronze",desc:"Every active entry reaches 10",icon:"🥉",unlocked:data.people.filter(function(p){return p.active;}).length>0&&data.people.filter(function(p){return p.active;}).every(function(p){return p.total>=10;})},
+  {id:"kissed",name:"First Kiss Logged",desc:"At least one profile marked kissed",icon:"💋",unlocked:data.people.some(function(p){return p.kissed;})},
+  {id:"sex",name:"First Sex Logged",desc:"At least one profile marked had sex",icon:"❤️",unlocked:data.people.some(function(p){return p.hadSex;})},
+  {id:"activity-100",name:"100 Activity Entries",desc:"Record 100 counted or historical entries",icon:"📚",unlocked:activity.length>=100},
+  {id:"history-10",name:"History Keeper",desc:"Add 10 historical date-only entries",icon:"🕰️",unlocked:data.historicalDates.length>=10}
+ ];
+}
+function syncAchievements(){
+ const unlocked=allAchievements().filter(function(a){return a.unlocked;}).map(function(a){return a.id;});
+ data.unlockedAchievements=[...new Set([...(data.unlockedAchievements||[]),...unlocked])];
+ save();
+}
+function collectionRows(){
+ const groups={};
+ data.people.forEach(function(p){
+   const key=p.source||"Unknown";
+   if(!groups[key])groups[key]=[];
+   groups[key].push(p);
+ });
+ return Object.entries(groups).map(function(entry){
+   const name=entry[0], people=entry[1];
+   const complete=people.filter(function(p){return p.total>=10;}).length;
+   return {name:name,count:people.length,complete:complete,total:people.reduce(function(s,p){return s+p.total;},0)};
+ }).sort(function(a,b){return b.total-a.total;});
+}
+function renderAchievements(){
+ syncAchievements();
+ const list=allAchievements();
+ const unlockedSet=new Set(data.unlockedAchievements||[]);
+ const collections=collectionRows();
+ document.getElementById("achievementsContent").innerHTML=`
+ <div class="grid">
+  <div class="card metric"><div class="label">Unlocked</div><div class="value">${list.filter(a=>unlockedSet.has(a.id)).length}</div></div>
+  <div class="card metric"><div class="label">Total badges</div><div class="value">${list.length}</div></div>
+  <div class="card metric"><div class="label">Collections</div><div class="value">${collections.length}</div></div>
+  <div class="card metric"><div class="label">Complete collections</div><div class="value">${collections.filter(c=>c.complete===c.count).length}</div></div>
+ </div>
+ <div class="card" style="margin-top:14px"><h2>Badges</h2><div class="achievement-grid">
+ ${list.map(a=>`<div class="achievement-card ${unlockedSet.has(a.id)?"unlocked":""}">
+   <div class="achievement-icon">${unlockedSet.has(a.id)?a.icon:"🔒"}</div>
+   <b>${esc(a.name)}</b><div class="small">${esc(a.desc)}</div>
+ </div>`).join("")}
+ </div></div>
+ <div class="card" style="margin-top:14px"><h2>Custom Achievements</h2><div class="achievement-grid">
+ ${(data.customAchievements||[]).map(a=>{const unlocked=customAchievementUnlocked(a);return `<div class="achievement-card ${unlocked?"unlocked":""}"><div class="achievement-icon">${unlocked?(a.icon||"🏆"):"🔒"}</div><b>${esc(a.name)}</b><div class="small">${esc(a.description||"")}</div><div class="toolbar" style="margin-top:8px"><button class="mini-btn" onclick="openCustomAchievementModal('${a.id}')">Edit</button><button class="mini-btn" onclick="deleteCustomAchievement('${a.id}')">Delete</button></div></div>`;}).join("")||'<p class="small">No custom achievements yet.</p>'}
+ </div></div>
+ <div class="card" style="margin-top:14px"><h2>Collections</h2><div class="collection-grid">
+ ${collections.map(c=>`<div class="collection-card"><div style="display:flex;justify-content:space-between"><b>${esc(c.name)}</b><span>${c.complete}/${c.count}</span></div>
+ <div class="progress" style="margin:10px 0"><span style="width:${c.count?Math.round(c.complete/c.count*100):0}%"></span></div>
+ <div class="small">${c.total} lifetime total · ${c.complete===c.count?"Complete":"In progress"}</div></div>`).join("")}
+ </div></div>`;
+}
+function seasonYears(){
+ const years=new Set();
+ data.logs.forEach(l=>years.add(l.date.slice(0,4)));
+ if(!years.size)years.add(String(new Date().getFullYear()));
+ return [...years].sort((a,b)=>b.localeCompare(a));
+}
+
+function seasonStats(year){
+ const activity=activityForYear(year);
+ const counted=activity.filter(function(a){return a.kind==="counted";});
+ const total=counted.reduce(function(s,a){return s+a.points;},0);
+ const byPersonPoints={};
+ const byPersonActivity={};
+ const byMonth={};
+ const days=new Set();
+ activity.forEach(function(a){
+   byPersonActivity[a.personId]=(byPersonActivity[a.personId]||0)+1;
+   byMonth[a.date.slice(0,7)]=(byMonth[a.date.slice(0,7)]||0)+1;
+   days.add(a.date);
+ });
+ counted.forEach(function(a){
+   byPersonPoints[a.personId]=(byPersonPoints[a.personId]||0)+a.points;
+ });
+ const championId=Object.entries(byPersonPoints).sort(function(a,b){return b[1]-a[1];})[0]?.[0];
+ const activityChampionId=Object.entries(byPersonActivity).sort(function(a,b){return b[1]-a[1];})[0]?.[0];
+ const topMonth=Object.entries(byMonth).sort(function(a,b){return b[1]-a[1];})[0];
+ return {
+   year:year,
+   total:total,
+   days:days.size,
+   activityCount:activity.length,
+   historicalCount:activity.filter(function(a){return a.kind==="history";}).length,
+   champion:getPerson(championId),
+   championAdded:byPersonPoints[championId]||0,
+   activityChampion:getPerson(activityChampionId),
+   activityChampionCount:byPersonActivity[activityChampionId]||0,
+   topMonth:topMonth?.[0]||"—",
+   topMonthTotal:topMonth?.[1]||0
+ };
+}
+
+function monthlyChampions(){
+ const months={};
+ allActivity().forEach(function(a){
+   const month=a.date.slice(0,7);
+   if(!months[month])months[month]={};
+   if(!months[month][a.personId])months[month][a.personId]={activity:0,points:0,historical:0};
+   months[month][a.personId].activity+=1;
+   months[month][a.personId].points+=Number(a.points||0);
+   if(a.kind==="history")months[month][a.personId].historical+=1;
+ });
+ return Object.entries(months)
+  .sort(function(a,b){return b[0].localeCompare(a[0]);})
+  .slice(0,12)
+  .map(function(entry){
+    const month=entry[0], values=entry[1];
+    const winner=Object.entries(values).sort(function(a,b){
+      if(b[1].activity!==a[1].activity)return b[1].activity-a[1].activity;
+      if(b[1].points!==a[1].points)return b[1].points-a[1].points;
+      return (getPerson(a[0])?.name||"").localeCompare(getPerson(b[0])?.name||"");
+    })[0];
+    if(!winner)return {month:month,person:null,activity:0,points:0,historical:0};
+    return {
+      month:month,
+      person:getPerson(winner[0]),
+      activity:winner[1].activity,
+      points:winner[1].points,
+      historical:winner[1].historical
+    };
+  });
+}
+function renderSeasons(){
+ const seasons=seasonYears().map(seasonStats);
+ const people=ranked();
+ const monthly=monthlyChampions();
+ document.getElementById("seasonsContent").innerHTML=`
+ <div class="season-grid">
+ ${seasons.map(s=>`<div class="season-card"><div class="small">${s.year===String(new Date().getFullYear())?"Current season":"Archived season"}</div><h2>${s.year}</h2>
+ <p>Season points: <b>${s.total}</b><br>Points champion: <b>${esc(s.champion?.name||"—")}</b> (+${s.championAdded})<br>Activity champion: <b>${esc(s.activityChampion?.name||"—")}</b> (${s.activityChampionCount} dates)<br>Different dates: <b>${s.days}</b><br>Historical dates: <b>${s.historicalCount}</b><br>Top activity month: <b>${s.topMonth}</b> (${s.topMonthTotal} dates)</p></div>`).join("")}
+ </div>
+ <div class="two">
+  <div class="card"><h2>Hall of Fame</h2>
+   ${people.slice(0,10).map((p,i)=>`<div class="hof-row"><div class="medal">${["🥇","🥈","🥉"][i]||"🏅"}</div><div><b>${esc(p.name)}</b><div class="small">${league(p.total)}</div></div><b>${p.total}</b></div>`).join("")}
+  </div>
+  <div class="card"><h2>Monthly Champions</h2>
+   ${monthly.length?monthly.map(m=>`<div class="hof-row"><div>${m.month}</div><div><b>${esc(m.person?.name||"—")}</b><div class="small">${m.points} points · ${m.historical} historical</div></div><b>${m.activity} entries</b></div>`).join(""):"<p class='small'>Monthly champions will appear as you log new entries.</p>"}
+  </div>
+ </div>`;
+}
+function combinedActivity(){
+ const counted=data.logs.map(function(l){return Object.assign({},l,{kind:"counted",amount:Number(l.amount||0)});});
+ const historical=data.historicalDates.map(function(h){return Object.assign({},h,{kind:"history",amount:0});});
+ return counted.concat(historical).sort(function(a,b){return b.date.localeCompare(a.date);});
+}
+function renderNews(){
+ const target=document.getElementById("newsContent");if(!target)return;
+ const items=[];
+ const br=getPerson("Brenda Davies");
+ if(br){
+   const goal=data.settings.brendaTarget;
+   const remain=Math.max(0,goal-br.total);
+   const bd=birthday30(br);
+   const days=bd?Math.max(0,Math.ceil((new Date(bd)-new Date(today()))/86400000)):0;
+   const pace=days?remain/days:0;
+   items.push({icon:"🎯",title:"Brenda → "+goal,detail:remain+" remaining · "+pace.toFixed(2)+" per day"});
+ }
+ combinedActivity().slice(0,10).forEach(function(a){
+   const p=getPerson(a.personId);
+   items.push({icon:a.kind==="history"?"🗓️":"➕",title:a.kind==="history"?"Historical date added":"New entry logged",detail:(p?p.name:"Unknown")+" · "+a.date+(a.kind==="counted"?" · +"+a.amount:"")});
+ });
+ ranked().filter(function(p){return p.lastLogged&&daysSince(p.lastLogged)>data.settings.attentionDays;}).slice(0,4).forEach(function(p){
+   items.push({icon:"⚠️",title:"Needs attention",detail:p.name+" · "+daysSince(p.lastLogged)+" days"});
+ });
+ target.innerHTML='<div class="news-list">'+items.slice(0,20).map(function(n){return `<div class="news-item"><div class="news-icon">${n.icon}</div><div><b>${esc(n.title)}</b><div class="small">${esc(n.detail)}</div></div></div>`;}).join("")+'</div>';
+}
+function populateTimelineSelect(){
+ const s=document.getElementById("timelinePerson");if(!s)return;
+ const old=s.value;
+ const alphabetical=[...data.people].sort(function(a,b){return a.name.localeCompare(b.name,undefined,{sensitivity:"base"});});
+ s.innerHTML='<option value="all">Everyone</option>'+alphabetical.map(function(p){return `<option value="${p.id}">${esc(p.name)}</option>`;}).join("");
+ if(old)s.value=old;
+}
+function renderTimeline(){
+ const target=document.getElementById("timelineContent");if(!target)return;
+ const personSelect=document.getElementById("timelinePerson");
+ const typeSelect=document.getElementById("timelineType");
+ const personId=personSelect?personSelect.value:"all";
+ const type=typeSelect?typeSelect.value:"all";
+ let rows=combinedActivity();
+ if(personId!=="all")rows=rows.filter(function(x){return x.personId===personId;});
+ if(type!=="all")rows=rows.filter(function(x){return x.kind===type;});
+ if(!rows.length){target.innerHTML='<div class="card"><p class="small">No matching activity yet.</p></div>';return;}
+ target.innerHTML='<div class="card"><div class="timeline-list">'+rows.map(function(a){
+   const p=getPerson(a.personId);
+   const badge=a.kind==="history"?'<span class="history-badge">Historical date only</span>':`<span class="badge">+${a.amount}</span>`;
+   return `<div class="timeline-item"><div class="timeline-date">${a.date}</div><b>${esc((p&&p.name)||"Unknown")}</b> ${badge}${a.note?`<div class="small">${esc(a.note)}</div>`:""}</div>`;
+ }).join("")+'</div></div>';
+}
+
+let galleryFilters={source:new Set(),gender:new Set(),type:new Set()};
+let slideshowOrder=[];
+let slideshowIndex=0;
+let slideshowTimer=null;
+let slideshowPlaying=false;
+
+function galleryEligible(){
+ const activeOnly=document.getElementById("galleryActiveOnly")?.checked;
+ const imagesOnly=document.getElementById("galleryImagesOnly")?.checked;
+ const favouritesOnly=document.getElementById("galleryFavouriteOnly")?.checked;
+ return data.people.filter(function(p){
+   return (!activeOnly||p.active) &&
+          (!imagesOnly||p.image) &&
+          (!favouritesOnly||p.favourite) &&
+          (!galleryFilters.source.size||galleryFilters.source.has(p.source)) &&
+          (!galleryFilters.gender.size||galleryFilters.gender.has(p.gender)) &&
+          (!galleryFilters.type.size||galleryFilters.type.has(p.contentType));
+ });
+}
+function toggleGalleryChip(group,value,el){
+ const set=galleryFilters[group];
+ if(set.has(value))set.delete(value);else set.add(value);
+ el.classList.toggle("on");
+}
+function renderGalleryFilters(){
+ const groups=[
+  ["source",[...new Set(data.people.map(p=>p.source).filter(Boolean))],"gallerySourceChips"],
+  ["gender",[...new Set(data.people.map(p=>p.gender).filter(Boolean))],"galleryGenderChips"],
+  ["type",[...new Set(data.people.map(p=>p.contentType).filter(Boolean))],"galleryTypeChips"]
+ ];
+ groups.forEach(function(group){
+   const key=group[0],values=group[1],id=group[2],el=document.getElementById(id);
+   if(!el)return;
+   el.innerHTML=values.sort().map(function(v){return `<span class="chip ${galleryFilters[key].has(v)?"on":""}" onclick="toggleGalleryChip('${key}','${esc(v)}',this)">${esc(v)}</span>`;}).join("");
+ });
+}
+function buildSlideshowQueue(){
+ slideshowOrder=galleryEligible().slice();
+ slideshowIndex=0;
+ renderSlideshowQueue();
+ renderCurrentSlide();
+ applySlideshowTransition();
+}
+function shuffleSlideshow(){
+ if(!slideshowOrder.length)slideshowOrder=galleryEligible().slice();
+ slideshowOrder=shuffleArray(slideshowOrder);
+ slideshowIndex=0;
+ renderSlideshowQueue();
+ renderCurrentSlide();
+}
+function clearSlideshowQueue(){
+ pauseSlideshow();
+ slideshowOrder=[];
+ slideshowIndex=0;
+ renderSlideshowQueue();
+ renderCurrentSlide();
+}
+function moveSlide(index,direction){
+ const target=index+direction;
+ if(target<0||target>=slideshowOrder.length)return;
+ const temp=slideshowOrder[index];
+ slideshowOrder[index]=slideshowOrder[target];
+ slideshowOrder[target]=temp;
+ if(slideshowIndex===index)slideshowIndex=target;
+ else if(slideshowIndex===target)slideshowIndex=index;
+ renderSlideshowQueue();
+ renderCurrentSlide();
+}
+function removeSlide(index){
+ slideshowOrder.splice(index,1);
+ if(slideshowIndex>=slideshowOrder.length)slideshowIndex=Math.max(0,slideshowOrder.length-1);
+ renderSlideshowQueue();
+ renderCurrentSlide();
+}
+function selectSlide(index){
+ slideshowIndex=index;
+ renderCurrentSlide();
+}
+function renderSlideshowQueue(){
+ const el=document.getElementById("slideshowQueue");if(!el)return;
+ if(!slideshowOrder.length){el.innerHTML='<p class="small">No pictures selected.</p>';return;}
+ el.innerHTML=slideshowOrder.map(function(p,i){
+   const image=p.image?`<img class="slideshow-thumb" src="${p.image}" alt="">`:'<div class="slideshow-thumb"></div>';
+   return `<div class="slideshow-queue-item ${i===slideshowIndex?"selected":""}">
+    <div>${i+1}</div>${image}<div onclick="selectSlide(${i})" style="cursor:pointer"><b>${esc(p.name)}</b><div class="small">${esc(p.source||"—")} · ${esc(p.gender||"—")}</div></div>
+    <div class="slideshow-queue-actions"><button onclick="moveSlide(${i},-1)">↑</button><button onclick="moveSlide(${i},1)">↓</button><button onclick="removeSlide(${i})">×</button></div>
+   </div>`;
+ }).join("");
+}
+function slideMarkup(p,fullscreen=false){
+ if(!p)return '<div class="slideshow-empty">Build an order to begin.</div>';
+ const showName=document.getElementById("slideShowName")?.value!=="false";
+ const chosen=pickSlideImage(p);const image=chosen?`<img src="${chosen}" alt="${esc(p.name)}">`:`<div class="slideshow-empty">No image for ${esc(p.name)}</div>`;
+ return image+(showName?`<div class="slideshow-caption">${esc(p.name)}</div>`:"");
+}
+function renderCurrentSlide(){
+ const p=slideshowOrder[slideshowIndex];
+ const preview=document.getElementById("slideshowPreview");
+ const full=document.getElementById("slideshowFullscreenStage");
+ if(preview)preview.innerHTML=slideMarkup(p,false);
+ if(full)full.innerHTML=slideMarkup(p,true);
+ renderSlideshowQueue();
+}
+function slideshowDelay(){if(document.getElementById("slideRandomTiming")?.value==="true"){const min=Math.max(.5,Number(slideMinSeconds.value||3)),max=Math.max(min,Number(slideMaxSeconds.value||8));return (min+Math.random()*(max-min))*1000;}return Math.max(.5,Number(document.getElementById("slideSeconds")?.value||5))*1000;}
+function startSlideshow(){
+ if(!slideshowOrder.length)buildSlideshowQueue();
+ if(!slideshowOrder.length)return alert("No eligible pictures.");
+ pauseSlideshow();
+ slideshowPlaying=true;
+ if(slideshowAudio.src)slideshowAudio.play().catch(()=>{});
+ function scheduleNext(){if(!slideshowPlaying)return;slideshowTimer=setTimeout(()=>{nextSlide();scheduleNext();},slideshowDelay());}scheduleNext();
+ renderCurrentSlide();
+}
+function pauseSlideshow(){
+ slideshowPlaying=false;
+ if(slideshowAudio)slideshowAudio.pause();
+ if(slideshowTimer){clearTimeout(slideshowTimer);slideshowTimer=null;}
+}
+function toggleSlideshowPlayback(){if(slideshowPlaying)pauseSlideshow();else startSlideshow();}
+function nextSlide(){
+ if(!slideshowOrder.length)return;
+ if(slideshowIndex<slideshowOrder.length-1)slideshowIndex++;
+ else if(document.getElementById("slideLoop")?.value!=="false")slideshowIndex=0;
+ else {pauseSlideshow();return;}
+ renderCurrentSlide();
+}
+function previousSlide(){
+ if(!slideshowOrder.length)return;
+ slideshowIndex=slideshowIndex>0?slideshowIndex-1:slideshowOrder.length-1;
+ renderCurrentSlide();
+}
+function openSlideshowFullscreen(){
+ if(!slideshowOrder.length)buildSlideshowQueue();
+ if(!slideshowOrder.length)return alert("No eligible pictures.");
+ document.getElementById("slideshowFullscreen").classList.add("open");
+ renderCurrentSlide();
+ const el=document.getElementById("slideshowFullscreen");
+ if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});
+}
+function closeSlideshowFullscreen(){
+ document.getElementById("slideshowFullscreen").classList.remove("open");
+ if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+}
+function renderGallery(){
+ renderGalleryFilters();
+ renderSlideshowQueue();
+ renderCurrentSlide();
+}
+
+function smartInsights(){
+ const people=ranked(),activity=allActivity(),month=today().slice(0,7);
+ const prev=new Date(today()+"T00:00:00");prev.setMonth(prev.getMonth()-1);
+ const prevMonth=prev.toISOString().slice(0,7);
+ const nowActs=activity.filter(a=>a.date.slice(0,7)===month), prevActs=activity.filter(a=>a.date.slice(0,7)===prevMonth);
+ const insights=[];
+ if(people[0])insights.push({icon:"🥇",title:"Current leader",detail:`${people[0].name} leads with ${people[0].total}`});
+ if(people.length>1)insights.push({icon:"⚔️",title:"Leader gap",detail:`${people[0].name} leads ${people[1].name} by ${people[0].total-people[1].total}`});
+ const diff=nowActs.length-prevActs.length;
+ insights.push({icon:diff>=0?"📈":"📉",title:"Monthly activity",detail:`${Math.abs(diff)} ${diff>=0?"more":"fewer"} activity entries than last month`});
+ const sourceMap={};nowActs.forEach(a=>{const p=getPerson(a.personId),k=p?.source||"Unknown";sourceMap[k]=(sourceMap[k]||0)+1;});
+ const topSource=Object.entries(sourceMap).sort((a,b)=>b[1]-a[1])[0];if(topSource)insights.push({icon:"🧩",title:"Biggest source this month",detail:`${topSource[0]} with ${topSource[1]} entries`});
+ const mover=people.slice().sort((a,b)=>personActivity(b.id).filter(x=>x.date.startsWith(month)).length-personActivity(a.id).filter(x=>x.date.startsWith(month)).length)[0];
+ if(mover)insights.push({icon:"🔥",title:"Most active this month",detail:`${mover.name} with ${personActivity(mover.id).filter(x=>x.date.startsWith(month)).length} entries`});
+ const closest=people.slice().sort((a,b)=>milestoneInfo(a.total).remaining-milestoneInfo(b.total).remaining)[0];
+ if(closest)insights.push({icon:"🎯",title:"Closest milestone",detail:`${closest.name} needs ${milestoneInfo(closest.total).remaining} for ${milestoneInfo(closest.total).next}`});
+ const inactive=people.filter(p=>p.lastLogged).sort((a,b)=>daysSince(b.lastLogged)-daysSince(a.lastLogged))[0];
+ if(inactive)insights.push({icon:"🕰️",title:"Longest inactive",detail:`${inactive.name} · ${daysSince(inactive.lastLogged)} days`});
+ return insights;
+}
+function renderInsights(){const el=document.getElementById("insightsContent");if(el)el.innerHTML='<div class="insight-grid">'+smartInsights().map(i=>`<div class="insight-card"><div class="insight-icon">${i.icon}</div><b>${esc(i.title)}</b><div class="small">${esc(i.detail)}</div></div>`).join("")+'</div>';}
+
+let calendarDate=new Date();
+function changeCalendarMonth(delta){calendarDate.setMonth(calendarDate.getMonth()+delta);renderCalendar();}
+function populateCalendarSelect(){const el=document.getElementById("calendarPerson");if(!el)return;const old=el.value,people=[...data.people].sort((a,b)=>a.name.localeCompare(b.name));el.innerHTML='<option value="all">Everyone</option>'+people.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("");if(old)el.value=old;}
+function calendarActivityForDate(date,personId){return allActivity().filter(a=>a.date===date&&(personId==="all"||a.personId===personId));}
+function renderCalendar(){
+ const title=document.getElementById("calendarTitle"),grid=document.getElementById("calendarGrid");if(!title||!grid)return;
+ const y=calendarDate.getFullYear(),m=calendarDate.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),offset=(first.getDay()+6)%7,personId=document.getElementById("calendarPerson")?.value||"all";
+ title.textContent=calendarDate.toLocaleString(undefined,{month:"long",year:"numeric"});
+ let cells=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`<div class="calendar-head">${d}</div>`).join("");
+ for(let i=0;i<offset;i++)cells+='<div class="calendar-day empty"></div>';
+ for(let d=1;d<=days;d++){const date=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,count=calendarActivityForDate(date,personId).length;cells+=`<div class="calendar-day heat-${Math.min(4,count)}" onclick="showCalendarDay('${date}')"><span class="num">${d}</span>${count?`<span class="count">${count}</span>`:""}</div>`;}
+ grid.innerHTML=cells;
+}
+function showCalendarDay(date){
+ const el=document.getElementById("calendarDayDetail"),personId=document.getElementById("calendarPerson")?.value||"all",acts=calendarActivityForDate(date,personId);
+ el.innerHTML=`<h2>${date}</h2>${acts.length?acts.map(a=>{const p=getPerson(a.personId);return `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(p?.name||"Unknown")}</b> ${a.kind==="history"?'<span class="history-badge">Historical</span>':`<span class="badge">+${a.points}</span>`}${a.note?`<div class="small">${esc(a.note)}</div>`:""}</div>`;}).join(""):'<p class="small">No activity.</p>'}`;
+}
+
+let selectedCategory=null;
+function categoryNames(){return [...new Set(data.people.map(p=>p.source||"Unknown"))].sort();}
+function selectCategory(name){selectedCategory=name;renderRecords();}
+function recordSummary(){
+ const people=ranked(),activity=allActivity(),months={};activity.forEach(a=>{const m=a.date.slice(0,7);months[m]=(months[m]||0)+1;});
+ const bestMonth=Object.entries(months).sort((a,b)=>b[1]-a[1])[0];
+ const mostActivity=people.slice().sort((a,b)=>personActivity(b.id).length-personActivity(a.id).length)[0];
+ const mostHistorical=people.slice().sort((a,b)=>personActivity(b.id).filter(x=>x.kind==="history").length-personActivity(a.id).filter(x=>x.kind==="history").length)[0];
+ const pairs=[];for(let i=0;i<people.length-1;i++)pairs.push([people[i],people[i+1],Math.abs(people[i].total-people[i+1].total)]);pairs.sort((a,b)=>a[2]-b[2]);
+ return {highest:people[0],lead:people.length>1?people[0].total-people[1].total:0,bestMonth,mostActivity,mostHistorical,closest:pairs[0]};
+}
+function renderRecords(){
+ const el=document.getElementById("recordsContent");if(!el)return;const r=recordSummary();if(!selectedCategory)selectedCategory=categoryNames()[0]||"Unknown";
+ const members=data.people.filter(p=>(p.source||"Unknown")===selectedCategory).sort((a,b)=>b.total-a.total);
+ el.innerHTML=`<div class="record-grid">
+ <div class="record-card"><div class="small">Highest total</div><h2>${esc(r.highest?.name||"—")}</h2><b>${r.highest?.total||0}</b></div>
+ <div class="record-card"><div class="small">Largest lead</div><h2>${r.lead}</h2></div>
+ <div class="record-card"><div class="small">Most active month</div><h2>${r.bestMonth?.[0]||"—"}</h2><b>${r.bestMonth?.[1]||0} entries</b></div>
+ <div class="record-card"><div class="small">Most activity entries</div><h2>${esc(r.mostActivity?.name||"—")}</h2><b>${r.mostActivity?personActivity(r.mostActivity.id).length:0}</b></div>
+ <div class="record-card"><div class="small">Most historical entries</div><h2>${esc(r.mostHistorical?.name||"—")}</h2><b>${r.mostHistorical?personActivity(r.mostHistorical.id).filter(x=>x.kind==="history").length:0}</b></div>
+ <div class="record-card"><div class="small">Closest rivals</div><h2>${r.closest?esc(r.closest[0].name)+" & "+esc(r.closest[1].name):"—"}</h2><b>${r.closest?.[2]||0} apart</b></div></div>
+ <div class="card" style="margin-top:14px"><h2>Category Explorer</h2><div class="category-explorer">
+ <div class="category-list">${categoryNames().map(n=>`<button class="category-btn ${n===selectedCategory?"on":""}" onclick="selectCategory('${esc(n)}')">${esc(n)}</button>`).join("")}</div>
+ <div class="category-people">${members.map(p=>`<div class="category-person" onclick="document.getElementById('profileSelect').value='${p.id}';navTo('profile')"><b>${esc(p.name)}</b><div class="small">${league(p.total)} · ${p.total} total · ${personActivity(p.id).length} entries</div></div>`).join("")||'<p class="small">No people in this category.</p>'}</div>
+ </div></div>`;
+}
+
+function customAchievementUnlocked(a){
+ const activity=allActivity();
+ if(a.rule==="grandTotal")return data.people.reduce((s,p)=>s+p.total,0)>=a.target;
+ if(a.rule==="activityCount")return activity.length>=a.target;
+ if(a.rule==="historicalCount")return data.historicalDates.length>=a.target;
+ if(a.rule==="peopleAtLeast")return data.people.filter(p=>p.total>=a.target).length>=Number(a.category||1);
+ if(a.rule==="categoryComplete"){const people=data.people.filter(p=>(p.source||"Unknown")===a.category);return people.length>0&&people.every(p=>p.total>=a.target);}
+ return false;
+}
+function openCustomAchievementModal(id=""){const a=data.customAchievements.find(x=>x.id===id);customAchievementId.value=a?.id||"";customAchievementName.value=a?.name||"";customAchievementIcon.value=a?.icon||"🏆";customAchievementRule.value=a?.rule||"grandTotal";customAchievementTarget.value=a?.target||100;customAchievementCategory.value=a?.category||"";customAchievementDescription.value=a?.description||"";customAchievementModal.classList.add("open");}
+function closeCustomAchievementModal(){customAchievementModal.classList.remove("open")}
+function saveCustomAchievement(){const id=customAchievementId.value||crypto.randomUUID(),obj={id,name:customAchievementName.value.trim()||"Custom achievement",icon:customAchievementIcon.value||"🏆",rule:customAchievementRule.value,target:Number(customAchievementTarget.value||1),category:customAchievementCategory.value.trim(),description:customAchievementDescription.value};const existing=data.customAchievements.find(x=>x.id===id);if(existing)Object.assign(existing,obj);else data.customAchievements.push(obj);save();closeCustomAchievementModal();renderAll();}
+function deleteCustomAchievement(id){if(confirm("Delete this achievement?")){data.customAchievements=data.customAchievements.filter(a=>a.id!==id);save();renderAll();}}
+
+function loadSlideshowMusic(event){const file=event.target.files?.[0];if(!file)return;slideshowAudio.src=URL.createObjectURL(file);}
+function applySlideshowTransition(){let mode=document.getElementById("slideTransition")?.value||"none";if(mode==="random")mode=["crossfade","zoom","slide-left","blur-in"][Math.floor(Math.random()*4)];["slideshowPreview","slideshowFullscreenStage"].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.remove("crossfade","zoom");void el.offsetWidth;if(mode!=="none")el.classList.add(mode);}});}
+
+function replayDates(){return [...new Set(allActivity().map(a=>a.date))].sort();}
+let replayTimer=null;
+function setupReplay(){
+ const dates=replayDates(),slider=document.getElementById("replaySlider"),dateInput=document.getElementById("replayDate");
+ if(!slider||!dateInput)return;
+ slider.max=Math.max(0,dates.length-1);
+ if(!dateInput.value)dateInput.value=dates[dates.length-1]||today();
+ slider.value=Math.max(0,dates.indexOf(dateInput.value));
+}
+function replaySliderChanged(){const dates=replayDates(),i=Number(replaySlider.value||0);if(dates[i])replayDate.value=dates[i];renderReplay();}
+function replayStep(delta){const max=Number(replaySlider.max||0);replaySlider.value=Math.max(0,Math.min(max,Number(replaySlider.value||0)+delta));replaySliderChanged();}
+function startReplay(){pauseReplay();replayTimer=setInterval(()=>{if(Number(replaySlider.value)>=Number(replaySlider.max)){pauseReplay();return;}replayStep(1);},Number(replaySpeed.value||800));}
+function pauseReplay(){if(replayTimer){clearInterval(replayTimer);replayTimer=null;}}
+function replayTotalsUntil(date,mode){
+ const totals={};data.people.forEach(p=>totals[p.id]=0);
+ allActivity().filter(a=>a.date<=date).forEach(a=>{totals[a.personId]+=(mode==="points"?a.points:1);});
+ return totals;
+}
+function renderReplay(){
+ const el=document.getElementById("replayContent");if(!el)return;setupReplay();
+ const date=replayDate.value||today(),mode=replayMode.value,totals=replayTotalsUntil(date,mode);
+ const rankedReplay=data.people.map(p=>({p,value:totals[p.id]||0})).sort((a,b)=>b.value-a.value||a.p.name.localeCompare(b.p.name));
+ const events=allActivity().filter(a=>a.date===date);
+ el.innerHTML=`<div class="replay-board"><div class="card"><h2>${date}</h2><div class="replay-list">${rankedReplay.slice(0,15).map((x,i)=>`<div class="replay-row"><b>#${i+1}</b><span>${esc(x.p.name)}</span><b>${x.value}</b></div>`).join("")}</div></div>
+ <div class="card"><h2>Activity that day</h2>${events.length?events.map(a=>{const p=getPerson(a.personId);return `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(p?.name||"Unknown")}</b> ${a.kind==="history"?'<span class="history-badge">Historical</span>':`<span class="badge">+${a.points}</span>`}</div>`;}).join(""):'<p class="small">No activity.</p>'}</div></div>`;
+}
+
+function wrappedYears(){const years=[...new Set(allActivity().map(a=>a.date.slice(0,4)))].sort((a,b)=>b.localeCompare(a));return years.length?years:[String(new Date().getFullYear())];}
+function populateWrappedYears(){const el=document.getElementById("wrappedYear");if(!el)return;const old=el.value;el.innerHTML=wrappedYears().map(y=>`<option>${y}</option>`).join("");if(old)el.value=old;}
+function renderWrapped(){
+ const el=document.getElementById("wrappedContent");if(!el)return;populateWrappedYears();
+ const year=wrappedYear.value||wrappedYears()[0],acts=activityForYear(year),counted=acts.filter(a=>a.kind==="counted"),points=counted.reduce((s,a)=>s+a.points,0);
+ const peopleMap={},monthMap={},sourceMap={};
+ acts.forEach(a=>{peopleMap[a.personId]=(peopleMap[a.personId]||0)+1;monthMap[a.date.slice(0,7)]=(monthMap[a.date.slice(0,7)]||0)+1;const p=getPerson(a.personId),k=p?.source||"Unknown";sourceMap[k]=(sourceMap[k]||0)+1;});
+ const topPerson=Object.entries(peopleMap).sort((a,b)=>b[1]-a[1])[0],topMonth=Object.entries(monthMap).sort((a,b)=>b[1]-a[1])[0],topSource=Object.entries(sourceMap).sort((a,b)=>b[1]-a[1])[0];
+ const historical=acts.filter(a=>a.kind==="history").length,uniquePeople=new Set(acts.map(a=>a.personId)).size,uniqueDays=new Set(acts.map(a=>a.date)).size;
+ el.innerHTML=`<div class="wrapped-hero"><div class="small">${year} WRAPPED</div><h2 style="font-size:38px;margin:6px 0">${acts.length} activity entries</h2><p>${points} points · ${historical} historical entries</p></div>
+ <div class="wrapped-grid">
+ <div class="wrapped-card"><div class="small">Top person</div><div class="wrapped-big">${esc(getPerson(topPerson?.[0])?.name||"—")}</div><p>${topPerson?.[1]||0} entries</p></div>
+ <div class="wrapped-card"><div class="small">Top month</div><div class="wrapped-big">${topMonth?.[0]||"—"}</div><p>${topMonth?.[1]||0} entries</p></div>
+ <div class="wrapped-card"><div class="small">Top source</div><div class="wrapped-big">${esc(topSource?.[0]||"—")}</div><p>${topSource?.[1]||0} entries</p></div>
+ <div class="wrapped-card"><div class="small">Different people</div><div class="wrapped-big">${uniquePeople}</div></div>
+ <div class="wrapped-card"><div class="small">Active days</div><div class="wrapped-big">${uniqueDays}</div></div>
+ <div class="wrapped-card"><div class="small">Average per active day</div><div class="wrapped-big">${uniqueDays?(acts.length/uniqueDays).toFixed(1):"0"}</div></div>
+ </div>`;
+}
+
+function labOptions(){
+ const type=labCompareType.value;
+ if(type==="people")return [...data.people].sort((a,b)=>a.name.localeCompare(b.name)).map(p=>({value:p.id,label:p.name}));
+ return [...new Set(data.people.map(p=>p[type]||"Unknown"))].sort().map(x=>({value:x,label:x}));
+}
+function populateLabOptions(){const opts=labOptions(),oldA=labA.value,oldB=labB.value,htmlOpts=opts.map(o=>`<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");labA.innerHTML=htmlOpts;labB.innerHTML=htmlOpts;if(oldA)labA.value=oldA;if(oldB)labB.value=oldB;if(!labB.value&&opts[1])labB.value=opts[1].value;}
+function matchesLab(a,value,type){const p=getPerson(a.personId);return type==="people"?a.personId===value:(p?.[type]||"Unknown")===value;}
+function labSeries(value,type,metric,period){
+ const map={};allActivity().filter(a=>matchesLab(a,value,type)).forEach(a=>{const key=period==="month"?a.date.slice(0,7):a.date.slice(0,4);map[key]=(map[key]||0)+(metric==="points"?a.points:1);});return map;
+}
+function renderLineChart(canvas,labels,a,b,nameA,nameB){
+ const ctx=canvas.getContext("2d"),w=canvas.width=canvas.clientWidth*devicePixelRatio,h=canvas.height=300*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);ctx.clearRect(0,0,canvas.clientWidth,300);
+ const cw=canvas.clientWidth,ch=300,pad=36,max=Math.max(1,...a,...b);ctx.strokeStyle="#334155";ctx.strokeRect(pad,10,cw-pad-10,ch-pad);
+ function line(vals,color){ctx.beginPath();vals.forEach((v,i)=>{const x=pad+(cw-pad-20)*(labels.length<=1?0:i/(labels.length-1)),y=10+(ch-pad-10)*(1-v/max);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.strokeStyle=color;ctx.lineWidth=3;ctx.stroke();}
+ line(a,getComputedStyle(document.body).getPropertyValue("--accent")||"#60a5fa");line(b,"#34d399");ctx.fillStyle="#cbd5e1";ctx.font="12px sans-serif";ctx.fillText(nameA,pad,290);ctx.fillStyle="#34d399";ctx.fillText(nameB,pad+140,290);
+}
+function renderLab(){
+ if(!document.getElementById("labContent"))return;populateLabOptions();const type=labCompareType.value,metric=labMetric.value,period=labPeriod.value,aVal=labA.value,bVal=labB.value,aMap=labSeries(aVal,type,metric,period),bMap=labSeries(bVal,type,metric,period),labels=[...new Set([...Object.keys(aMap),...Object.keys(bMap)])].sort(),a=labels.map(k=>aMap[k]||0),b=labels.map(k=>bMap[k]||0);
+ labContent.innerHTML=`<div class="card"><canvas id="labChart" class="line-chart"></canvas><div class="two"><div><b>${esc(labA.options[labA.selectedIndex]?.text||"A")}</b><p>${a.reduce((s,x)=>s+x,0)} total</p></div><div><b>${esc(labB.options[labB.selectedIndex]?.text||"B")}</b><p>${b.reduce((s,x)=>s+x,0)} total</p></div></div></div>`;renderLineChart(labChart,labels,a,b,labA.options[labA.selectedIndex]?.text||"A",labB.options[labB.selectedIndex]?.text||"B");
+}
+
+let pendingPhotoLibrary=[];
+async function previewMoreProfileImages(event){const files=[...(event.target.files||[])];for(const file of files){try{pendingPhotoLibrary.push(await compressImageFile(file,900,.72));}catch{}}renderPhotoLibraryEditor();}
+function renderPhotoLibraryEditor(){const el=document.getElementById("editPhotoLibrary");if(!el)return;el.innerHTML=pendingPhotoLibrary.map((src,i)=>`<div class="photo-tile"><img src="${src}"><button class="fav" onclick="setFavouritePhoto(${i})">★</button><button onclick="removePhotoAt(${i})">×</button></div>`).join("");}
+function removePhotoAt(i){pendingPhotoLibrary.splice(i,1);renderPhotoLibraryEditor();}
+function setFavouritePhoto(i){const src=pendingPhotoLibrary[i];if(!src)return;pendingProfileImage=src;document.getElementById("editImagePreview").src=src;}
+function pickSlideImage(p){if(!p.images?.length)return p.image||"";return p.images[Math.floor(Math.random()*p.images.length)];}
+
+function predictionRows(){
+ const rows=[];const todayDate=new Date(today()+"T00:00:00");
+ data.people.forEach(p=>{const acts=personActivity(p.id).filter(a=>a.kind==="counted").sort((a,b)=>a.date.localeCompare(b.date));if(acts.length<2)return;const first=new Date(acts[0].date),days=Math.max(1,(todayDate-first)/86400000),rate=acts.reduce((s,a)=>s+a.points,0)/days,next=milestoneInfo(p.total).next,remain=next-p.total;if(rate>0)rows.push({name:p.name,next,days:Math.ceil(remain/rate)});});
+ return rows.sort((a,b)=>a.days-b.days).slice(0,10);
+}
+function applyThemeFromSettings(){const theme=themeSelect.value||"midnight";document.body.className=[...document.body.classList].filter(x=>!x.startsWith("theme-")).join(" ");if(theme!=="midnight")document.body.classList.add("theme-"+theme);document.documentElement.style.setProperty("--accent",accentPicker.value);}
+function saveAppearanceSettings(){data.appearance={theme:themeSelect.value,accent:accentPicker.value,pin:pinInput.value};save();applyThemeFromSettings();alert("Appearance saved.");}
+function loadAppearanceSettings(){themeSelect.value=data.appearance?.theme||"midnight";accentPicker.value=data.appearance?.accent||"#60a5fa";pinInput.value=data.appearance?.pin||"";applyThemeFromSettings();}
+function lockApp(){if(!data.appearance?.pin)return alert("Set a PIN first.");appLock.classList.add("open");unlockPin.value="";}
+function unlockApp(){if(unlockPin.value===String(data.appearance?.pin||""))appLock.classList.remove("open");else alert("Incorrect PIN.");}
+function renderSettings(){document.getElementById("setBrenda").value=data.settings.brendaTarget;document.getElementById("setGrand").value=data.settings.grandTotalTarget;document.getElementById("setAttention").value=data.settings.attentionDays;}
+function saveSettings(){data.settings.brendaTarget=Number(document.getElementById("setBrenda").value);data.settings.grandTotalTarget=Number(document.getElementById("setGrand").value);data.settings.attentionDays=Number(document.getElementById("setAttention").value);save();renderAll();}
+function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="personal-stats-backup.json";a.click();}
+function importData(e){
+ const f=e.target.files[0];if(!f)return;
+ const r=new FileReader();
+ r.onload=function(){
+   try{
+     data=JSON.parse(r.result);
+     normaliseData();
+     save();
+     renderAll();
+     alert("Imported and upgraded successfully.");
+   }catch(err){
+     console.error(err);
+     alert("Invalid or incompatible backup.");
+   }
+ };
+ r.readAsText(f);
+}
+function resetData(){if(confirm("Reset all app data?")){data=structuredClone(INITIAL_DATA);save();renderAll();}}
+function safeRender(name,fn){
+ try{fn();}
+ catch(err){
+   console.error(name,err);
+   const pageMap={renderDashboard:"dashboardContent",renderPeople:"peopleTable",renderLogs:"recentLogs",renderProfile:"profileContent",renderChallenges:"challengeContent",renderStats:"statsContent",renderAchievements:"achievementsContent",renderSeasons:"seasonsContent",renderNews:"newsContent",renderTimeline:"timelineContent"};
+   const id=pageMap[name];
+   const el=id&&document.getElementById(id);
+   if(el)el.innerHTML='<div class="card error-card"><b>This page had an error.</b><div class="small">'+esc(err.message||String(err))+'</div></div>';
+ }
+}
+function renderAll(){
+ normaliseData();
+ safeRender("populateSelects",populateSelects);
+ safeRender("renderDashboard",renderDashboard);
+ safeRender("renderPeople",renderPeople);
+ safeRender("renderLogs",renderLogs);
+ safeRender("renderProfile",renderProfile);
+ safeRender("renderChallenges",renderChallenges);
+ safeRender("renderWheelFilters",renderWheelFilters);
+ safeRender("drawWheel",drawWheel);
+ safeRender("renderStats",renderStats);
+ safeRender("renderAchievements",renderAchievements);
+ safeRender("renderSeasons",renderSeasons);
+ safeRender("populateTimelineSelect",populateTimelineSelect);
+ safeRender("renderNews",renderNews);
+ safeRender("renderTimeline",renderTimeline);
+ safeRender("renderGallery",renderGallery);
+ safeRender("renderInsights",renderInsights);
+ safeRender("populateCalendarSelect",populateCalendarSelect);
+ safeRender("renderCalendar",renderCalendar);
+ safeRender("renderRecords",renderRecords);
+ safeRender("setupReplay",setupReplay);
+ safeRender("renderReplay",renderReplay);
+ safeRender("populateWrappedYears",populateWrappedYears);
+ safeRender("renderWrapped",renderWrapped);
+ safeRender("renderLab",renderLab);
+ safeRender("loadAppearanceSettings",loadAppearanceSettings);
+ safeRender("renderSettings",renderSettings);
+}
+document.addEventListener("keydown",e=>{if(!document.getElementById("slideshowFullscreen")?.classList.contains("open"))return;if(e.key==="ArrowRight")nextSlide();if(e.key==="ArrowLeft")previousSlide();if(e.key===" ")toggleSlideshowPlayback();if(e.key==="Escape")closeSlideshowFullscreen();});
+let touchStartX=0;document.addEventListener("touchstart",e=>{touchStartX=e.changedTouches[0].clientX},{passive:true});document.addEventListener("touchend",e=>{if(!document.getElementById("slideshowFullscreen")?.classList.contains("open"))return;const dx=e.changedTouches[0].clientX-touchStartX;if(Math.abs(dx)>50)(dx<0?nextSlide():previousSlide());},{passive:true});
+buildNav();renderAll();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+ navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+}
+</script>
+</body>
+</html>

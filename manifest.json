@@ -1,0 +1,11 @@
+{
+  "name": "Personal Stats",
+  "short_name": "Personal Stats",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [],
+  "description": "Private offline personal statistics tracker",
+  "scope": "./"
+}
